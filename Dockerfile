@@ -2,6 +2,7 @@ FROM node:22-slim
 
 RUN apt-get update && apt-get install -y \
     build-essential \
+    python3 \
     libcairo2-dev \
     libpango1.0-dev \
     libjpeg-dev \
@@ -12,11 +13,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --only=production
+COPY app/package*.json ./
+RUN npm ci
 
-COPY . .
+COPY app/ .
 
-EXPOSE 3000
+EXPOSE 3001
 
-CMD ["node", "server.js"]
+CMD ["npx", "tsx", "src/serve.ts"]

@@ -1,64 +1,110 @@
 # Minecraft Map
 
-An interactive web map that renders the real world in Minecraft block art style. Pan, zoom, and search anywhere on Earth — every tile is generated on-the-fly from real geographic data.
+A real-time web application that renders the entire world as a Minecraft-style map. Every tile is generated on-the-fly from real geographic data -- roads, buildings, forests, water, elevation -- all drawn with authentic Minecraft block textures and north-shading.
 
-![Minecraft Map](https://img.shields.io/badge/style-Minecraft-brightgreen)
+Built with TypeScript, Express, Leaflet, and Node Canvas. Features user accounts, real-time friend tracking over WebSocket, turn-by-turn navigation with a Minecraft compass, and a full inventory-style UI.
 
 ## Features
 
-- **Live tile generation** — explores the whole world, rendering Minecraft-style tiles as you pan and zoom
-- **Real geographic data** — roads, buildings, parks, water, forests, paths all sourced from OpenStreetMap + Overture Maps
-- **3D voxel pipeline** — builds an actual voxel world per tile, then renders top-down with Minecraft north-shading
-- **Biome-aware palettes** — block choices adapt to latitude/elevation (Mediterranean, temperate, arid, arctic, etc.)
-- **Complete building coverage** — combines OSM data with Microsoft/Overture AI building footprints (2.6B buildings worldwide)
-- **Real elevation** — terrain heights from AWS Terrain Tiles create hills, valleys, and coastlines
-- **Tree placement** — biome-appropriate trees with proper trunk + canopy in forests and parks
-- **Multiple map layers** — toggle between Minecraft, Satellite, and Roads views
-- **Search** — find any place by name or coordinates
-- **Location tracking** — show your position on the map with a Minecraft-style marker
+**Map**
+- Live tile generation from OpenStreetMap, Overture Maps, and AWS Terrain Tiles
+- 3D voxel pipeline: fetch, classify, heightmap, voxelize, render
+- Biome-aware block palettes (Mediterranean, temperate, arid, arctic)
+- 24 semantic terrain classes (water, forest, buildings, roads, etc.)
+- Toggle between Minecraft, Satellite, and Roads layers
 
-## Data Sources
+**Navigation**
+- Search any place by name with live autocomplete
+- Turn-by-turn directions via OSRM
+- Animated Minecraft compass that points toward your next step
+- GPS location tracking with a Minecraft player marker
 
-| Source | What it provides |
-|--------|-----------------|
-| [VersaTiles](https://versatiles.org) | Base vector tiles (roads, land use, water) |
-| [Overpass API](https://overpass-api.de) | Complete OSM buildings, roads, paths, land features |
-| [Overture Maps](https://overturemaps.org) | Microsoft AI building footprints (fills OSM gaps) |
-| [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) | Elevation data (Terrarium encoding) |
+**Social**
+- User accounts with registration and login
+- Friend codes -- add friends by sharing a 6-character code
+- Real-time friend locations on the map over WebSocket
+- In-app chat
+
+**UI**
+- Minecraft inventory-style panels and buttons
+- Day/night clock with real-time weather
+- Ambient sounds (birds, wind) based on visible terrain
+- Achievement popups, Nether portal transitions
+- Responsive mobile layout with map-frame safe zones
 
 ## Quick Start
 
 ```bash
-cd pipeline
+cd app
 npm install
 npx tsx src/serve.ts
 ```
 
-Open **http://localhost:3001** in your browser.
+Open **http://localhost:3001**.
+
+## Docker
+
+```bash
+docker build -t minecraft-map .
+docker run -p 3001:3001 minecraft-map
+```
 
 ## How It Works
 
-Each map tile goes through this pipeline:
+Each 256x256 tile passes through a five-stage pipeline:
 
-1. **Fetch** — pull vector tiles, building footprints, road data, and elevation for the tile's bounding box
-2. **Classify** — rasterize all features into a semantic map (water, road, building, forest, park, etc.)
-3. **Heightmap** — decode Terrarium elevation into Minecraft Y levels
-4. **Voxelize** — place blocks column-by-column: surface, subsurface, trees, building extrusion, water fill
-5. **Render** — top-down orthographic render with Minecraft-style north-shading for depth
+1. **Fetch** -- vector tiles, building footprints, roads, and elevation for the tile bounds
+2. **Classify** -- rasterize features into a semantic grid (water, road, building, forest, park...)
+3. **Heightmap** -- decode Terrarium elevation into Minecraft Y levels
+4. **Voxelize** -- place blocks column-by-column with surface materials, trees, building extrusion, water
+5. **Render** -- top-down orthographic projection with Minecraft north-shading
 
-Tiles are cached after first render. Cold tiles take ~3-6s, cached tiles are instant.
+Cold tiles take 3-6 seconds. Cached tiles are instant.
 
-## Semantic Classes
+## Data Sources
 
-The pipeline recognizes 24 terrain/feature types including water, grass, forest, farmland, sand, rock, snow, roads, buildings, parking, railway, wetland, parks, pools, sports pitches, playgrounds, dirt paths, and more.
+| Source | Provides |
+|--------|----------|
+| [VersaTiles](https://versatiles.org) | Base vector tiles (roads, land use, water) |
+| [Overpass API](https://overpass-api.de) | OSM buildings, roads, paths, land features |
+| [Overture Maps](https://overturemaps.org) | AI building footprints (fills OSM gaps) |
+| [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) | Elevation data |
+| [OSRM](http://router.project-osrm.org) | Routing for turn-by-turn navigation |
+| [Photon](https://photon.komoot.io) | Geocoding for place search |
 
 ## Tech Stack
 
-- **Server**: Express.js + TypeScript
-- **Frontend**: Leaflet.js with pixelated rendering
-- **Rendering**: Node Canvas (2D top-down voxel render)
-- **Vector tiles**: @mapbox/vector-tile + pbf
-- **Building data**: PMTiles (Overture Maps)
+- **Runtime**: Node.js + TypeScript (tsx)
+- **Server**: Express.js with WebSocket (ws)
+- **Database**: SQLite via better-sqlite3
+- **Auth**: bcryptjs + session cookies
+- **Frontend**: Leaflet.js, vanilla JS, Minecraft font
+- **Rendering**: Node Canvas (2D voxel projection)
+- **Vector tiles**: @mapbox/vector-tile + pbf + PMTiles
+
+## Project Structure
+
+```
+app/
+  src/
+    serve.ts          Server, API routes, WebSocket, auth
+    index.ts          Tile generation pipeline entry
+    types.ts          Shared type definitions
+    ingest/           Data fetching (vector tiles, elevation, buildings)
+    semantic/         Feature classification and rasterization
+    terrain/          Heightmap processing
+    palette/          Block type definitions and biome palettes
+    voxel/            Voxel world construction and block placement
+    preview/          Top-down rendering with north-shading
+    util/             Caching, math, helpers
+  public/
+    index.html        Single-file frontend (HTML + CSS + JS)
+    icons/            Minecraft sprites and compass frames
+    sounds/           Ambient audio files
+    clock/            Day/night cycle clock frames
+    menu/             Title screen assets
+  test/               Auth, friends, WebSocket, waypoint tests
+```
 
 ## License
 
