@@ -1,6 +1,6 @@
 # Minecraft Map
 
-**The entire real world, rendered as a Minecraft map.** Pan, zoom, search, and navigate anywhere on Earth -- every tile is generated on-the-fly from real geographic data using a full 3D voxel pipeline.
+**The entire real world, rendered as a Minecraft map.** Pan, zoom, search, and navigate anywhere on Earth -- every tile is generated on-the-fly from real geographic data using a full 3D voxel pipeline. Built in 3 days.
 
 ![Title Screen](screenshots/title-screen.png)
 
