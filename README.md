@@ -77,6 +77,17 @@ Weather cheats let you force rain, snow, thunder, or clear skies -- complete wit
 
 ---
 
+## Multiplayer
+
+Add friends with a 6-character friend code, see their live location on the map in real time over WebSocket, and chat in-game. Achievement popups fire for milestones like your first search, first navigation, and first friend added.
+
+<p align="center">
+  <img src="screenshots/multiplayer-map.png" width="49%" alt="Friends on Map"/>
+  <img src="screenshots/friends-panel.png" width="49%" alt="Friends Panel & Chat"/>
+</p>
+
+---
+
 ## Everything Else
 
 | Feature | Description |
