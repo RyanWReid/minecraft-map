@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc",
     "pipeline": "tsx src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate": "tsx src/batch-generate.ts"
   },
   "dependencies": {
     "@mapbox/vector-tile": "^2.0.4",

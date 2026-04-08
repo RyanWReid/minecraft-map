@@ -24,7 +24,7 @@ export const BLOCKS: Record<string, BlockType> = {
   moss_block:       { id: 'minecraft:moss_block',       name: 'Moss',             mapColor: [80, 120, 50],   category: 'terrain' },
   bedrock:          { id: 'minecraft:bedrock',          name: 'Bedrock',          mapColor: [25, 25, 25],    category: 'terrain' },
 
-  water:            { id: 'minecraft:water',            name: 'Water',            mapColor: [64, 64, 255],   category: 'water' },
+  water:            { id: 'minecraft:water',            name: 'Water',            mapColor: [64, 64, 255],   category: 'water' },  // MC official: base [64,64,255]
 
   // Logs
   oak_log:          { id: 'minecraft:oak_log',          name: 'Oak Log',          mapColor: [143, 119, 72],  category: 'vegetation' },

@@ -220,14 +220,6 @@ export function placeBlocks(
         waterDetailCount++;
       }
 
-      // Lily pads on calm water (not shoreline, random scatter)
-      if (!adjLand) {
-        const hash = ((x * 48271) ^ (z * 93461)) & 0xFFFF;
-        if (hash < 200) {
-          setWorldBlock(world, x, waterY + 1, z, 'minecraft:lily_pad');
-          waterDetailCount++;
-        }
-      }
     }
   }
   console.log(`  Water details: ${waterDetailCount}`);

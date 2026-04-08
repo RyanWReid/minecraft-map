@@ -22,23 +22,32 @@
     .leaflet-tile { image-rendering: pixelated !important; }
     .leaflet-container { background: url('/icons/dirt.png') repeat !important; background-size: 64px 64px !important; image-rendering: pixelated !important; }
 
-    /* Layer toggle - top right */
+    /* Top bar — settings gear + layer toggle */
     #controls {
       position: absolute; top: 40px; right: 40px;
-      z-index: 1000; display: flex; gap: 0;
+      z-index: 1000; display: flex; gap: 2px;
     }
+    #settings-btn {
+      position: static; width: 32px; height: 32px;
+      padding: 0; border: 2px solid #555;
+      background: #8B8B8B; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #555;
+    }
+    #settings-btn:hover { background: #a0a0a0; }
+    #settings-btn svg { width: 16px; height: 16px; }
     .ctrl-btn {
       font-family: 'Minecraft', monospace; font-size: 11px;
-      padding: 6px 12px; border: 3px solid #555;
-      background: #6b6b6b; color: #aaa; cursor: pointer;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
+      padding: 6px 14px; border: 2px solid #555;
+      background: #8B8B8B; color: #ddd; cursor: pointer;
+      box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #555;
+      text-shadow: var(--mc-shadow);
     }
-    .ctrl-btn:not(:last-child) { border-right: none; }
     .ctrl-btn.active {
-      background: #4a8c3f; color: #fff;
-      box-shadow: inset -2px -2px 0 #6ab35e, inset 2px 2px 0 #2d6324;
+      background: var(--mc-green); color: #fff;
+      box-shadow: inset 2px 2px 0 #6ab35e, inset -2px -2px 0 #2d6324;
     }
-    .ctrl-btn:hover:not(.active) { background: #888; }
+    .ctrl-btn:hover:not(.active) { background: #a0a0a0; color: #ffffa0; }
 
     /* Search panel - top left */
     #search-panel {
@@ -48,32 +57,33 @@
     #search-wrap { position: relative; }
     #search-input {
       font-family: 'Minecraft', monospace; font-size: 13px;
-      padding: 10px 14px; width: 100%; border: 3px solid #555;
-      background: #c6c6c6; color: #3f3f3f; outline: none;
-      box-shadow: inset 2px 2px 0 #8b8b8b, inset -2px -2px 0 #fff;
+      padding: 10px 14px; width: 100%; border: 2px solid #a0a0a0;
+      background: #000; color: #e0e0e0; outline: none;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
     }
-    #search-input::placeholder { color: #7a7a7a; }
+    #search-input:focus { border-color: #fff; }
+    #search-input::placeholder { color: #666; text-shadow: none; }
     .ac-dropdown {
       position: absolute; top: 100%; left: 0; right: 0;
-      z-index: 1002; background: #ddd; border: 3px solid #555; border-top: none;
+      z-index: 1002; background: rgba(0,0,0,0.85); border: 2px solid #a0a0a0; border-top: none;
       max-height: 220px; overflow-y: auto;
-      box-shadow: 2px 4px 0 rgba(0,0,0,0.5);
     }
     .ac-item {
       font-family: 'Minecraft', monospace; font-size: 10px;
-      padding: 8px 10px; color: #333; cursor: pointer;
-      border-bottom: 1px solid #bbb;
+      padding: 8px 10px; color: #fff; cursor: pointer;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      text-shadow: var(--mc-shadow);
     }
-    .ac-item:hover, .ac-item.sel { background: #4a8c3f; color: #fff; }
-    .ac-item .ac-sub { color: #777; font-size: 9px; display: block; margin-top: 2px; }
+    .ac-item:hover, .ac-item.sel { background: var(--mc-green); color: #fff; }
+    .ac-item .ac-sub { color: #aaa; font-size: 9px; display: block; margin-top: 2px; }
     .ac-item:hover .ac-sub, .ac-item.sel .ac-sub { color: #cfc; }
 
-    /* Minecraft inventory-style panel base */
+    /* Minecraft inventory-style panel base (modal panels) */
     .mc-panel {
       display: none; margin-top: 4px;
-      background: #c6c6c6; border: 4px solid; padding: 0;
-      border-color: #fff #555 #555 #fff;
-      box-shadow: 2px 4px 0 rgba(0,0,0,0.4);
+      background: var(--panel-bg); border: 3px solid var(--panel-border); padding: 0;
+      box-shadow: inset 2px 2px 0 var(--panel-hi), inset -2px -2px 0 var(--slot-bg),
+                  2px 4px 0 rgba(0,0,0,0.4);
       image-rendering: pixelated;
     }
     .mc-panel.open { display: block; }
@@ -84,10 +94,10 @@
     }
     .mc-panel-body { padding: 4px 8px 8px; }
 
-    /* Inventory slot - used for inputs and info boxes */
+    /* Inventory slot - recessed cell */
     .mc-slot {
-      background: #8b8b8b; border: 2px solid;
-      border-color: #373737 #fff #fff #373737;
+      background: var(--slot-bg);
+      box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br);
       padding: 4px 6px; margin-bottom: 4px;
     }
 
@@ -121,7 +131,20 @@
     #place-close-btn:hover { background: #aaa; }
 
     /* Directions panel */
-    #dir-panel { /* uses .mc-panel */ }
+    #dir-panel { /* uses .mc-panel */ transition: opacity 0.3s, transform 0.3s; }
+    #dir-panel.nav-collapsed { display: none !important; }
+
+    /* Map item icon — shown when nav collapses the dir-panel */
+    #nav-map-toggle {
+      display: none; position: absolute; top: 40px; left: 40px; z-index: 1001;
+      width: 40px; height: 40px; cursor: pointer;
+      image-rendering: pixelated;
+      background: url('/icons/map_item.png') center/contain no-repeat;
+      filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.5));
+      transition: transform 0.15s;
+    }
+    #nav-map-toggle:hover { transform: scale(1.15); }
+    #nav-map-toggle.open { display: block; }
     .dir-row { display: flex; gap: 4px; margin-bottom: 4px; align-items: center; position: relative; }
 
     /* Waypoint icons - pixel blocks instead of dots */
@@ -148,8 +171,8 @@
     .dir-input-wrap input {
       font-family: 'Minecraft', monospace; font-size: 11px;
       padding: 4px 6px; width: 100%;
-      background: #8b8b8b; color: #fff; outline: none;
-      border: 2px solid; border-color: #373737 #fff #fff #373737;
+      background: var(--slot-bg); color: #fff; outline: none;
+      border: 2px solid; border-color: var(--slot-tl) var(--slot-br) var(--slot-br) var(--slot-tl);
       text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
     }
     .dir-input-wrap input::placeholder { color: #bbb; text-shadow: none; }
@@ -189,8 +212,8 @@
     #dir-info {
       font-family: 'Minecraft', monospace; font-size: 11px; color: #3f3f3f;
       margin-top: 6px; display: none; text-align: center;
-      background: #8b8b8b; border: 2px solid;
-      border-color: #373737 #fff #fff #373737;
+      background: var(--slot-bg);
+      box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br);
       padding: 6px;
       text-shadow: 1px 1px 0 rgba(255,255,255,0.2);
     }
@@ -228,14 +251,21 @@
     #nav-start-btn.navigating { background: #8b3333; }
     #nav-start-btn.navigating:hover { background: #a33; }
 
-    /* Navigation HUD banner */
+    /* Navigation HUD banner — bottom center, above coords */
     #nav-banner {
-      display: none; position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
-      z-index: 1002; background: rgba(0,0,0,0.85); border: 3px solid #555;
-      padding: 12px 20px; min-width: 300px; max-width: 500px; text-align: center;
-      box-shadow: inset 2px 2px 0 #444, inset -2px -2px 0 #222;
+      display: none; position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 1002; text-align: center;
+      flex-direction: column; align-items: center; gap: 6px;
     }
-    #nav-banner.open { display: block; }
+    #nav-banner.open { display: flex; }
+    /* Minecraft compass */
+    #nav-compass {
+      width: 64px; height: 64px;
+      image-rendering: pixelated;
+    }
+    #nav-text {
+      background: var(--hud-bg-heavy); padding: 8px 16px;
+    }
     #nav-direction {
       font-family: 'Minecraft', monospace; font-size: 16px; color: #fff;
       margin-bottom: 4px;
@@ -244,17 +274,16 @@
       font-family: 'Minecraft', monospace; font-size: 11px; color: #7f7;
     }
 
-    /* Coords bar */
+    /* Coords bar — HUD overlay, bottom center */
     #coords {
       position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-      z-index: 1000; font-family: 'Minecraft', monospace; font-size: 12px;
-      color: #fff; background: rgba(0,0,0,0.7); padding: 6px 14px; border: 2px solid #555;
+      z-index: 1000; padding: 4px 12px;
+      font-family: 'Minecraft', monospace; font-size: 11px;
+      color: #fff; text-shadow: var(--mc-shadow);
+      background: var(--hud-bg);
     }
-    .leaflet-control-zoom a {
-      font-family: 'Minecraft', monospace !important;
-      background: #8b8b8b !important; border: 2px solid #555 !important;
-      color: #fff !important;
-    }
+    /* Leaflet zoom hidden — integrated into #toolbar */
+    .leaflet-control-zoom { display: none !important; }
     .leaflet-control-attribution {
       font-family: 'Minecraft', monospace !important; font-size: 10px !important;
       background: rgba(0,0,0,0.6) !important; color: #aaa !important;
@@ -265,22 +294,208 @@
       image-rendering: pixelated;
       transition: transform 0.3s ease;
     }
-    .leaflet-control-zoom { margin-bottom: 40px !important; margin-right: 32px !important; }
-    #locate-btn {
-      position: absolute; bottom: 140px; right: 32px; z-index: 1000;
-      width: 34px; height: 34px; border: 2px solid #555;
-      background: #6b6b6b; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
+    /* zoom controls integrated into toolbar */
+    /* Right toolbar — inventory hotbar */
+    #toolbar {
+      position: absolute; bottom: 60px; right: 32px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 2px; padding: 4px;
+      background: var(--panel-bg); border: 3px solid var(--panel-border);
+      box-shadow: inset 2px 2px 0 var(--panel-hi), inset -2px -2px 0 var(--slot-bg);
     }
-    #locate-btn:hover { background: #888; }
-    #locate-btn.active { background: #4a8c3f; }
-    #locate-btn svg { width: 18px; height: 18px; }
+    .toolbar-divider {
+      height: 2px; background: #aaa; margin: 2px 0;
+      box-shadow: 0 1px 0 #fff;
+    }
+    .toolbar-slot {
+      width: 36px; height: 36px;
+      background: var(--slot-bg);
+      box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br);
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-family: 'Minecraft', monospace; font-size: 16px;
+      color: #fff; text-shadow: var(--mc-shadow); image-rendering: pixelated;
+      position: relative;
+    }
+    .toolbar-slot:hover {
+      background: #a0a0a0;
+    }
+    .toolbar-slot.active {
+      background: var(--mc-green);
+      box-shadow: inset 2px 2px 0 #2d6324, inset -2px -2px 0 #6ab35e;
+    }
+    .toolbar-slot.has-pending { background: #8b8333; }
+    .toolbar-slot.has-home { background: #8b3333; }
+    .toolbar-slot.has-home:hover { background: #a34; }
+    .toolbar-slot svg { width: 18px; height: 18px; }
+    .toolbar-slot img { width: 20px; height: 20px; image-rendering: pixelated; }
+    /* Tooltip — authentic MC purple-tinted */
+    .toolbar-slot[data-tip]::after {
+      content: attr(data-tip); position: absolute;
+      right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+      font-family: 'Minecraft', monospace; font-size: 10px; color: #fff;
+      background: var(--tip-bg); padding: 4px 8px; white-space: nowrap;
+      pointer-events: none; visibility: hidden; opacity: 0;
+      transition: opacity 0.15s, visibility 0.15s;
+      text-shadow: var(--mc-shadow);
+      border: 1px solid var(--tip-border);
+    }
+    .toolbar-slot[data-tip]:hover::after { visibility: visible; opacity: 1; }
+
+    /* Social buttons — middle-right, individual stone buttons */
+    #social-btns {
+      position: absolute; right: 32px; top: 50%; transform: translateY(-50%);
+      z-index: 1000; display: flex; flex-direction: column; gap: 6px;
+    }
+    .social-btn {
+      width: 36px; height: 36px;
+      background: var(--slot-bg); border: 2px solid #555;
+      box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #555;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-family: 'Minecraft', monospace; font-size: 16px;
+      color: #fff; text-shadow: var(--mc-shadow); image-rendering: pixelated;
+      position: relative;
+    }
+    .social-btn:hover { background: #a0a0a0; color: #ffffa0; }
+    .social-btn svg { width: 20px; height: 20px; image-rendering: pixelated; }
+    .social-btn.active {
+      background: var(--mc-green);
+      box-shadow: inset 2px 2px 0 #6ab35e, inset -2px -2px 0 #2d6324;
+    }
+    .social-btn.has-pending { background: #8b8333; }
+    /* Tooltip */
+    .social-btn[data-tip]::after {
+      content: attr(data-tip); position: absolute;
+      right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+      font-family: 'Minecraft', monospace; font-size: 10px; color: #fff;
+      background: var(--tip-bg); padding: 4px 8px; white-space: nowrap;
+      pointer-events: none; visibility: hidden; opacity: 0;
+      transition: opacity 0.15s, visibility 0.15s;
+      text-shadow: var(--mc-shadow); border: 1px solid var(--tip-border);
+    }
+    .social-btn[data-tip]:hover::after { visibility: visible; opacity: 1; }
+
+    /* Chat — left side above clock */
+    #chat-box {
+      position: absolute; bottom: 110px; left: 40px; z-index: 1001;
+      width: 340px; font-family: 'Minecraft', monospace;
+      display: flex; flex-direction: column;
+    }
+    /* Messages area — always visible (preview + full) */
+    #chat-messages {
+      padding: 0; max-height: 200px; overflow-y: hidden;
+      pointer-events: none;
+    }
+    #chat-box.open #chat-messages {
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-bottom: none;
+      padding: 8px 10px;
+      overflow-y: auto;
+      pointer-events: auto;
+      max-height: 220px;
+    }
+    .chat-msg {
+      font-size: 11px; color: #fff; padding: 2px 4px;
+      text-shadow: 1px 1px 0 #000;
+      background: rgba(0,0,0,0.5);
+      margin-bottom: 1px; width: fit-content;
+      transition: opacity 2s ease;
+    }
+    .chat-msg.faded { opacity: 0; pointer-events: none; }
+    /* When chat is open, show ALL messages, no fading */
+    #chat-box.open .chat-msg { opacity: 1 !important; background: none; width: auto; }
+    .chat-msg .chat-name { color: #55ff55; }
+    .chat-msg .chat-name.self { color: #aaa; }
+    .chat-msg .chat-system { color: #ffff55; font-style: italic; }
+    /* Input row — only visible when open */
+    #chat-input-row {
+      display: none;
+    }
+    #chat-box.open #chat-input-row {
+      display: flex;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    #chat-input {
+      flex: 1; font-family: 'Minecraft', monospace; font-size: 11px;
+      padding: 6px 10px; background: transparent; color: #fff;
+      border: none; outline: none;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+    }
+    #chat-input::placeholder { color: #666; text-shadow: none; }
+    #chat-send {
+      font-family: 'Minecraft', monospace; font-size: 11px;
+      padding: 6px 14px; background: rgba(255,255,255,0.08); color: #aaa;
+      border: none; border-left: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer; text-shadow: var(--mc-shadow);
+    }
+    #chat-send:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* Achievement toast — slides in from right */
+    #achievement-container {
+      position: fixed; top: 80px; right: 40px; z-index: 2000;
+      display: flex; flex-direction: column; gap: 6px;
+      pointer-events: none;
+    }
+    .achievement-toast {
+      display: flex; align-items: center; gap: 10px;
+      background: #282828; border: 3px solid;
+      border-color: #555 #111 #111 #555;
+      box-shadow: inset 2px 2px 0 #3a3a3a, inset -2px -2px 0 #1a1a1a;
+      padding: 8px 14px 8px 10px;
+      font-family: 'Minecraft', monospace;
+      image-rendering: pixelated;
+      transform: translateX(calc(100% + 60px));
+      animation: achieveSlide 5s ease forwards;
+    }
+    @keyframes achieveSlide {
+      0%   { transform: translateX(calc(100% + 60px)); }
+      8%   { transform: translateX(0); }
+      80%  { transform: translateX(0); }
+      100% { transform: translateX(calc(100% + 60px)); }
+    }
+    .achievement-icon {
+      width: 32px; height: 32px; image-rendering: pixelated;
+      background: var(--slot-bg);
+      box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .achievement-icon img { width: 20px; height: 20px; image-rendering: pixelated; }
+    .achievement-text { display: flex; flex-direction: column; gap: 1px; }
+    .achievement-title {
+      font-size: 11px; color: #ffff55;
+      text-shadow: 1px 1px 0 #3f3f15;
+    }
+    .achievement-desc {
+      font-size: 11px; color: #fff;
+      text-shadow: var(--mc-shadow);
+    }
 
     /* Minecraft map 8-slice frame */
     .map-frame { position: fixed; inset: 0; z-index: 998; pointer-events: none; }
     .map-frame * { position: fixed; image-rendering: pixelated; }
-    :root { --ft: 24px; --fc: 36px; }
+    :root {
+      --ft: 24px; --fc: 36px;
+      /* HUD overlay (on-map controls) */
+      --hud-bg: rgba(0, 0, 0, 0.5);
+      --hud-bg-heavy: rgba(0, 0, 0, 0.7);
+      /* Inventory panel (modal panels) */
+      --panel-bg: #C6C6C6;
+      --panel-border: #555;
+      --panel-hi: #fff;
+      --slot-bg: #8B8B8B;
+      --slot-tl: #373737;
+      --slot-br: #fff;
+      /* Semantic */
+      --mc-green: #4a8c3f;
+      --mc-text: #fff;
+      --mc-text-dim: #aaa;
+      --mc-shadow: 1px 1px 0 #3f3f3f;
+      /* Tooltip */
+      --tip-bg: rgba(16, 0, 16, 0.94);
+      --tip-border: rgba(80, 0, 255, 0.31);
+    }
     .frame-corner { width: var(--fc); height: var(--fc); background-size: contain; }
     .frame-ctl { top: 0; left: 0; background-image: url('/frame/corner-tl.png'); }
     .frame-ctr { top: 0; right: 0; background-image: url('/frame/corner-tr.png'); }
@@ -310,40 +525,7 @@
     .poi-marker:hover .poi-label { display: block; }
     .poi-marker:hover .poi-pin { transform: scale(1.15); }
 
-    #poi-toggle {
-      position: absolute; bottom: 180px; right: 32px; z-index: 1000;
-      width: 34px; height: 34px; border: 2px solid #555;
-      background: #6b6b6b; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
-      image-rendering: pixelated;
-    }
-    #poi-toggle:hover { background: #888; }
-    #poi-toggle.active { background: #4a8c3f; }
-    #poi-toggle img { width: 20px; height: 20px; image-rendering: pixelated; }
-
-    /* Home/spawn button */
-    #home-btn {
-      position: absolute; bottom: 210px; right: 32px; z-index: 1000;
-      width: 34px; height: 34px; border: 2px solid #555;
-      background: #6b6b6b; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
-      font-size: 18px;
-    }
-    #home-btn:hover { background: #888; }
-
-    /* Help button */
-    #help-btn {
-      position: absolute; bottom: 250px; right: 32px; z-index: 1000;
-      width: 34px; height: 34px; border: 2px solid #555;
-      background: #6b6b6b; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
-      font-family: 'Minecraft', monospace; font-size: 16px;
-      color: #fff; text-shadow: 1px 1px 0 #333;
-    }
-    #help-btn:hover { background: #888; }
+    /* (POI, home, help buttons now use .toolbar-slot styling) */
 
     /* Help overlay */
     #help-overlay {
@@ -378,8 +560,7 @@
       background: rgba(255,255,255,0.08);
       padding: 1px 6px; min-width: 30px; text-align: center;
     }
-    #home-btn.has-home { background: #8b3333; }
-    #home-btn.has-home:hover { background: #a34; }
+    /* home-btn active states now in .toolbar-slot rules */
 
     /* Nether portal transition */
     #portal-overlay {
@@ -398,16 +579,7 @@
       100% { opacity: 0; }
     }
 
-    /* Settings cog button */
-    #settings-btn {
-      position: absolute; top: 40px; right: 280px; z-index: 1000;
-      width: 34px; height: 34px; border: 2px solid #555;
-      background: #6b6b6b; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
-    }
-    #settings-btn:hover { background: #888; }
-    #settings-btn svg { width: 20px; height: 20px; }
+    /* Settings/Cheats pause menu overlays */
 
     /* ===== PAUSE MENU OVERLAY — authentic Minecraft style ===== */
     #settings-overlay {
@@ -499,6 +671,20 @@
     }
     #cheats-overlay.open { display: flex; }
 
+    /* Danger Zone + Confirm overlays — same style */
+    #audio-overlay,
+    #danger-overlay, #confirm-overlay {
+      display: none; position: fixed; inset: 0; z-index: 2002;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      flex-direction: column; align-items: center; justify-content: center;
+    }
+    #audio-overlay.open, #danger-overlay.open, #confirm-overlay.open { display: flex; }
+    /* Greyed out music track button when music is off */
+    #music-track-btn.disabled { opacity: 0.4; pointer-events: none; }
+    #music-vol-slider.disabled { opacity: 0.4; pointer-events: none; }
+    #confirm-overlay { z-index: 2003; }
+
     /* Time-of-day overlay — dynamic lighting */
     #night-overlay {
       position: fixed; inset: 0; z-index: 997;
@@ -507,25 +693,29 @@
     }
     #night-overlay.on { display: block; }
 
-    /* Clock + weather HUD — bottom left */
+    /* Clock HUD — standalone, bottom-left, prominent */
     #clock-hud {
-      position: absolute; bottom: 60px; left: 40px; z-index: 1000;
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(0,0,0,0.7); border: 2px solid #555;
-      padding: 6px 10px; font-family: 'Minecraft', monospace;
+      position: absolute; bottom: 50px; left: 40px; z-index: 1000;
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Minecraft', monospace;
     }
     #mc-clock {
-      width: 32px; height: 32px; image-rendering: pixelated;
+      width: 48px; height: 48px; image-rendering: pixelated;
+      border: 3px solid #555;
+      box-shadow: inset 2px 2px 0 #fff, inset -2px -2px 0 var(--slot-bg);
+      background: var(--panel-bg);
+      padding: 2px;
     }
     #clock-info {
-      display: flex; flex-direction: column; gap: 1px;
+      display: flex; flex-direction: column; gap: 2px;
     }
     #clock-time {
-      color: #fff; font-size: 12px;
-      text-shadow: 1px 1px 0 #3f3f3f;
+      color: #fff; font-size: 14px;
+      text-shadow: var(--mc-shadow);
     }
     #clock-weather {
-      color: #aaa; font-size: 10px;
+      color: var(--mc-text-dim); font-size: 10px;
+      text-shadow: 1px 1px 0 #2a2a2a;
     }
     #weather-icon {
       font-size: 14px; margin-right: 2px;
@@ -555,6 +745,8 @@
     #title-screen {
       position: fixed; inset: 0; z-index: 5000;
       text-align: center; overflow: hidden;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       font-family: 'Minecraft', monospace;
       color: #fff; text-shadow: 2px 2px 0 #383838;
     }
@@ -611,7 +803,7 @@
     /* Button wrapper — centered in lower half */
     .title-buttons {
       position: relative; z-index: 2;
-      margin: 4vw auto 0;
+      margin-top: 20px;
       width: 50vw; min-width: 300px; max-width: 520px;
     }
 
@@ -666,15 +858,21 @@
       padding: 6px 12px;
       font-size: clamp(9px, 1vw, 12px); color: #aaa;
       text-shadow: 1px 1px 0 #000;
-      display: flex; justify-content: space-between;
+      display: flex; justify-content: space-between; align-items: center;
     }
+    #title-socials { display: flex; gap: 10px; }
+    .social-link {
+      color: #aaa; text-decoration: none;
+      display: flex; align-items: center; gap: 4px;
+      transition: color 0.2s;
+    }
+    .social-link:hover { color: #fff; }
 
-    /* ===== AUTH SCREEN (dirt bg — classic Minecraft options screen) ===== */
+    /* ===== AUTH SCREEN — MC "Create World" style ===== */
     #auth-screen {
       position: fixed; inset: 0; z-index: 5001;
       display: none; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+      background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
                   #866043 url('/icons/dirt.png') repeat;
       background-size: auto, 10%;
       image-rendering: pixelated;
@@ -683,26 +881,40 @@
     }
     #auth-screen.open { display: flex; }
     #auth-title {
-      font-size: 2vw; margin-bottom: 2vw;
+      text-align: center; padding: 14px 0 10px; font-size: 16px;
+    }
+    #auth-content {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.35);
+      border-top: 2px solid #333; border-bottom: 2px solid #333;
+      padding: 20px;
+    }
+    .auth-label {
+      font-size: 12px; color: #aaa;
+      margin: 12px 0 4px; width: 50vw; max-width: 420px; min-width: 260px;
+      text-align: left;
     }
     .auth-input {
-      font-family: 'Minecraft', monospace; font-size: 1.2vw;
-      width: 40vw; max-width: 400px; min-width: 260px;
-      padding: 0.6vw 1vw; margin: 0.3vw 0;
+      font-family: 'Minecraft', monospace; font-size: 14px;
+      width: 50vw; max-width: 420px; min-width: 260px;
+      padding: 8px 10px;
       background: #000; color: #e0e0e0;
       border: 2px solid #a0a0a0;
       outline: none; text-shadow: 1px 1px 0 #333;
     }
-    .auth-input::placeholder { color: #666; text-shadow: none; }
+    .auth-input::placeholder { color: #555; text-shadow: none; }
     .auth-input:focus { border-color: #fff; }
     #auth-error {
-      font-size: 1vw; color: #ff5555;
-      margin: 0.5vw 0; text-shadow: 1px 1px 0 #3f0000;
-      min-height: 1.2vw;
+      font-size: 11px; color: #ff5555;
+      margin: 8px 0; text-shadow: 1px 1px 0 #3f0000;
+      min-height: 14px; text-align: center;
     }
-    #auth-screen .mc-menu-btn {
-      width: 40vw; max-width: 400px; min-width: 260px;
-      margin: 0.3vw auto;
+    #auth-buttons {
+      display: flex; gap: 8px; justify-content: center; padding: 12px 20px;
+    }
+    #auth-buttons .mc-menu-btn {
+      width: 45%; max-width: 250px; min-width: 140px; margin: 0;
     }
 
     /* ===== LOADING SCREEN ===== */
@@ -775,32 +987,23 @@
     }
 
     /* ===== FRIENDS PANEL ===== */
-    #friends-btn {
-      position: absolute; bottom: 290px; right: 32px; z-index: 1000;
-      width: 34px; height: 34px; border: 2px solid #555;
-      background: #6b6b6b; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444;
-      font-size: 16px;
-    }
-    #friends-btn:hover { background: #888; }
-    #friends-btn.has-pending { background: #8b8333; }
+    /* friends-btn now uses .toolbar-slot styling */
     #friends-panel {
-      display: none; position: absolute; top: 40px; right: 40px; z-index: 1500;
-      width: 320px; max-height: 70vh; overflow-y: auto;
-      background: #c6c6c6; border: 4px solid;
-      border-color: #fff #555 #555 #fff;
-      box-shadow: 2px 4px 0 rgba(0,0,0,0.4);
+      display: none; position: absolute; top: 50%; right: 80px; transform: translateY(-50%);
+      z-index: 1500; width: 320px; max-height: 70vh; overflow-y: auto;
+      background: var(--panel-bg); border: 3px solid var(--panel-border);
+      box-shadow: inset 2px 2px 0 var(--panel-hi), inset -2px -2px 0 var(--slot-bg),
+                  2px 4px 0 rgba(0,0,0,0.4);
       font-family: 'Minecraft', monospace;
     }
     #friends-panel.open { display: block; }
     .fp-title { font-size: 11px; color: #3f3f3f; padding: 6px 8px 4px; text-align: center; text-shadow: 1px 1px 0 rgba(255,255,255,0.3); }
     .fp-body { padding: 4px 8px 8px; }
-    .fp-code { background: #8b8b8b; border: 2px solid; border-color: #373737 #fff #fff #373737; padding: 6px 8px; margin-bottom: 6px; text-align: center; font-size: 10px; color: #fff; cursor: pointer; }
+    .fp-code { background: var(--slot-bg); box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br); padding: 6px 8px; margin-bottom: 6px; text-align: center; font-size: 10px; color: #fff; cursor: pointer; }
     .fp-code span { font-size: 14px; letter-spacing: 3px; color: #55ff55; }
     .fp-code:hover span { color: #fff; }
     .fp-input-row { display: flex; gap: 4px; margin-bottom: 6px; }
-    .fp-input { flex: 1; font-family: 'Minecraft', monospace; font-size: 11px; padding: 4px 6px; background: #8b8b8b; color: #fff; outline: none; border: 2px solid; border-color: #373737 #fff #fff #373737; text-transform: uppercase; letter-spacing: 2px; }
+    .fp-input { flex: 1; font-family: 'Minecraft', monospace; font-size: 11px; padding: 4px 6px; background: var(--slot-bg); color: #fff; outline: none; box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br); border: none; text-transform: uppercase; letter-spacing: 2px; }
     .fp-add-btn { font-family: 'Minecraft', monospace; font-size: 10px; padding: 4px 8px; background: #5a9c4f; color: #fff; border: 2px solid; border-color: #7bc96a #2d6324 #2d6324 #7bc96a; cursor: pointer; }
     .fp-add-btn:hover { background: #6ab35e; }
     .fp-section { font-size: 9px; color: #666; margin: 6px 0 3px; text-transform: uppercase; }
@@ -809,75 +1012,59 @@
     .fp-dot.online { background: #55ff55; }
     .fp-dot.offline { background: #555; }
     .fp-name { flex: 1; }
-    .fp-action { font-family: 'Minecraft', monospace; font-size: 9px; padding: 2px 6px; cursor: pointer; border: 1px solid #555; background: #8b8b8b; color: #3f3f3f; }
+    .fp-action { font-family: 'Minecraft', monospace; font-size: 9px; padding: 2px 6px; cursor: pointer; border: 1px solid #555; background: var(--slot-bg); color: #3f3f3f; }
     .fp-action:hover { background: #aaa; }
     .fp-action.accept { background: #5a9c4f; color: #fff; border-color: #2d6324; }
     .fp-action.deny { background: #c94040; color: #fff; border-color: #8b2020; }
     .fp-msg { font-size: 10px; color: #666; padding: 4px 0; text-align: center; }
 
     /* ===== CHAT (MC PE style) ===== */
-    #chat-btn { position: absolute; bottom: 330px; right: 32px; z-index: 1000; width: 34px; height: 34px; border: 2px solid #555; background: #6b6b6b; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: inset 2px 2px 0 #888, inset -2px -2px 0 #444; font-size: 14px; color: #fff; }
-    #chat-btn:hover { background: #888; }
-    #chat-panel { display: none; position: fixed; bottom: 40px; left: 40px; right: 40px; z-index: 1500; max-height: 220px; background: rgba(0,0,0,0.55); border: 2px solid rgba(255,255,255,0.1); font-family: 'Minecraft', monospace; }
-    #chat-panel.open { display: block; }
-    #chat-messages { padding: 8px 10px; max-height: 170px; overflow-y: auto; }
-    .chat-msg { font-size: 11px; color: #fff; padding: 1px 0; text-shadow: 1px 1px 0 #000; }
-    .chat-msg .chat-name { color: #55ff55; }
-    .chat-msg .chat-name.self { color: #aaa; }
-    .chat-msg .chat-system { color: #ffff55; font-style: italic; }
-    #chat-input-row { display: flex; border-top: 1px solid rgba(255,255,255,0.15); }
-    #chat-input { flex: 1; font-family: 'Minecraft', monospace; font-size: 12px; padding: 6px 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; outline: none; }
-    #chat-input::placeholder { color: #666; }
-    #chat-send { font-family: 'Minecraft', monospace; font-size: 11px; padding: 6px 12px; background: #5a9c4f; color: #fff; border: none; cursor: pointer; }
-    #chat-send:hover { background: #6ab35e; }
+    /* Old chat panel removed — now using MC Java-style floating chat */
 
     /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 768px) {
       /* Search panel — full width, smaller margin */
-      #search-panel {
-        top: 12px; left: 8px; right: 8px;
-        width: auto;
-      }
+      #search-panel { top: 12px; left: 8px; right: 8px; width: auto; }
+      #nav-map-toggle { top: 12px; left: 8px; }
       #search-input { font-size: 14px; padding: 10px 12px; }
       .ac-item { font-size: 12px; padding: 10px; }
       .ac-item .ac-sub { font-size: 10px; }
 
-      /* Layer toggle — below search, smaller */
-      #controls {
-        top: 12px; right: 8px;
-      }
+      /* Top bar */
+      #controls { top: 12px; right: 8px; }
       .ctrl-btn { font-size: 9px; padding: 5px 8px; }
+      #settings-btn { padding: 5px 8px; }
+      #settings-btn svg { width: 14px; height: 14px; }
 
-      /* Settings cog — top right, clear of controls */
-      #settings-btn {
-        top: 12px; right: auto; left: 8px;
-        width: 30px; height: 30px;
-      }
+      /* Social buttons */
+      #social-btns { right: 10px; }
+      .social-btn { width: 42px; height: 42px; font-size: 18px; }
+      .social-btn::after { display: none; }
 
-      /* Right-side buttons — smaller, closer to edge */
-      #locate-btn, #poi-toggle, #home-btn, #help-btn {
-        right: 10px; width: 38px; height: 38px;
-      }
-      #locate-btn { bottom: 100px; }
-      #poi-toggle { bottom: 146px; }
-      #home-btn { bottom: 192px; }
-      #help-btn { bottom: 238px; }
-      #friends-btn { bottom: 284px; }
-      #chat-btn { bottom: 330px; }
-      #chat-panel { left: 8px; right: 8px; bottom: 60px; }
-      .leaflet-control-zoom { margin-bottom: 10px !important; margin-right: 10px !important; }
+      /* Toolbar */
+      #toolbar { right: 10px; bottom: 60px; }
+      .toolbar-slot { width: 42px; height: 42px; font-size: 18px; }
+      .toolbar-slot::after { display: none; }
 
-      /* Coords bar — smaller */
-      #coords {
-        bottom: 8px; font-size: 9px; padding: 4px 8px;
-      }
+      /* Clock */
+      #clock-hud { bottom: 40px; left: 8px; }
+      #mc-clock { width: 36px; height: 36px; }
+      #clock-time { font-size: 11px; }
+      #clock-weather { font-size: 8px; }
+      /* Coords */
+      #coords { bottom: 8px; font-size: 9px; padding: 3px 8px; }
 
-      /* Nav banner — full width on mobile */
-      #nav-banner {
-        top: 60px; left: 8px; right: 8px;
-        transform: none; min-width: auto; max-width: none;
-        padding: 8px 12px;
-      }
+      /* Friends panel */
+      #friends-panel { top: auto; bottom: 60px; left: 8px; right: 8px; width: auto; }
+
+      /* Chat box */
+      #chat-box { left: 8px; bottom: 90px; width: auto; right: 60px; }
+      /* zoom in toolbar */
+
+      /* Nav banner */
+      #nav-banner { bottom: 50px; left: auto; right: auto; min-width: auto; max-width: 90vw; padding: 0; }
+      #nav-compass { width: 48px; height: 48px; }
+      #nav-text { padding: 6px 10px; }
       #nav-direction { font-size: 14px; }
       #nav-distance { font-size: 10px; }
 
@@ -886,66 +1073,46 @@
       .dir-input-wrap input { font-size: 12px; }
       .step-item { font-size: 11px; }
 
-      /* Map frame — thinner on mobile */
       :root { --ft: 14px; --fc: 20px; }
 
-      /* Pause menu — full width */
+      /* Pause menu */
       #settings-body { width: 90vw; }
       .mc-btn { font-size: 12px; padding: 10px 0; }
       #settings-title { font-size: 18px; }
 
-      /* Clock HUD — smaller */
-      #clock-hud {
-        bottom: 40px; left: 8px; padding: 4px 6px;
-      }
-      #mc-clock { width: 24px; height: 24px; }
-      #clock-time { font-size: 10px; }
-      #clock-weather { font-size: 8px; }
+      /* Attribution */
+      .leaflet-control-attribution { margin-bottom: 14px !important; margin-right: 10px !important; font-size: 8px !important; }
 
-      /* Attribution — tighter */
-      .leaflet-control-attribution {
-        margin-bottom: 14px !important; margin-right: 10px !important;
-        font-size: 8px !important;
-      }
-
-      /* Title screen — mobile layout */
+      /* Title screen */
       #title-logo { width: 80%; margin-top: 8%; }
       #title-edition { font-size: 12px; }
       #splash-text { font-size: 14px; top: 15%; right: 5%; }
-      .title-buttons {
-        margin: 6vh auto 0;
-        width: 85vw; min-width: 0;
-      }
-      .mc-menu-btn {
-        font-size: 14px; padding: 8px 0 10px 0;
-        outline-width: 2px;
-      }
+      .title-buttons { margin: 6vh auto 0; width: 85vw; min-width: 0; }
+      .mc-menu-btn { font-size: 14px; padding: 8px 0 10px 0; outline-width: 2px; }
       .mc-menu-row { gap: 6px; }
       #title-footer { font-size: 8px; padding: 4px 8px; }
 
-      /* Auth screen — wider inputs on mobile */
-      #auth-title { font-size: 18px; }
-      .auth-input {
-        width: 85vw; max-width: none;
-        font-size: 14px; padding: 10px 12px;
-      }
-      #auth-screen .mc-menu-btn {
-        width: 85vw; max-width: none;
-        font-size: 14px;
-      }
+      /* Auth */
+      #auth-title { font-size: 16px; }
+      #auth-content { margin: 0; padding: 16px; }
+      .auth-label { width: 90vw; font-size: 11px; }
+      .auth-input { width: 90vw; max-width: none; font-size: 14px; padding: 10px 12px; }
+      #auth-buttons .mc-menu-btn { width: 45%; min-width: 120px; font-size: 13px; }
       #auth-error { font-size: 11px; }
 
-      /* Loading screen */
       #loading-title { font-size: 16px; }
       #loading-bar-wrap { width: 80vw; }
     }
 
-    /* Extra small screens (phones in portrait) */
+    /* Extra small screens */
     @media (max-width: 480px) {
       #search-panel { top: 8px; left: 4px; right: 4px; }
       #controls { top: 8px; right: 4px; }
       .ctrl-btn { font-size: 8px; padding: 4px 6px; }
-      #settings-btn { top: 8px; left: 4px; width: 28px; height: 28px; }
+      #toolbar { right: 4px; bottom: 60px; }
+      .toolbar-slot { width: 38px; height: 38px; }
+      #clock-hud { left: 4px; }
+      #coords { font-size: 8px; }
       :root { --ft: 10px; --fc: 14px; }
       #title-logo { width: 90%; margin-top: 12%; }
       .title-buttons { width: 92vw; }
@@ -966,25 +1133,35 @@
       <div class="mc-menu-btn" id="btn-play" onclick="titlePlay()">Singleplayer</div>
       <div class="mc-menu-btn" id="btn-signin" onclick="showAuth('login')">Sign In</div>
       <div class="mc-menu-btn" id="btn-signup" onclick="showAuth('register')">Create New Account</div>
-      <div class="mc-menu-row">
-        <div class="mc-menu-btn disabled">Options...</div>
-        <div class="mc-menu-btn disabled">Quit Game</div>
-      </div>
     </div>
     <div id="title-footer">
-      <span>Minecraft Map v1.0</span>
+      <div id="title-socials">
+        <a href="https://github.com/RyanWReid/minecraft-map" target="_blank" rel="noopener" class="social-link">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+      <span>Developed by Ryan Reid</span>
       <span>Not affiliated with Mojang/Microsoft</span>
     </div>
   </div>
 
   <!-- ===== AUTH SCREEN ===== -->
   <div id="auth-screen">
-    <div id="auth-title">Sign In</div>
-    <input class="auth-input" id="auth-name" type="text" placeholder="Player Name" maxlength="16" autocomplete="off" />
-    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" />
-    <div id="auth-error"></div>
-    <div class="mc-menu-btn" id="auth-submit" onclick="submitAuth()">Sign In</div>
-    <div class="mc-menu-btn" onclick="hideAuth()" style="margin-top:4px">Cancel</div>
+    <div id="auth-title">Create New World</div>
+    <div id="auth-content">
+      <div class="auth-label">Player Name</div>
+      <input class="auth-input" id="auth-name" type="text" placeholder="Enter your name..." maxlength="16" autocomplete="off" />
+      <div class="auth-label">Password</div>
+      <input class="auth-input" id="auth-pass" type="password" placeholder="Choose a password..." />
+      <div class="auth-label" id="auth-confirm-label" style="display:none">Confirm Password</div>
+      <input class="auth-input" id="auth-confirm" type="password" placeholder="Confirm password..." style="display:none" />
+      <div id="auth-error"></div>
+    </div>
+    <div id="auth-buttons">
+      <div class="mc-menu-btn" id="auth-submit" onclick="submitAuth()">Create New World</div>
+      <div class="mc-menu-btn" onclick="hideAuth()">Cancel</div>
+    </div>
   </div>
 
   <!-- ===== LOADING SCREEN ===== -->
@@ -1048,12 +1225,21 @@
     <div class="frame-edge frame-er"></div>
   </div>
 
-  <!-- Layer toggle - top right -->
+  <!-- Unified top bar — settings + layer toggle -->
   <div id="controls">
+    <button id="settings-btn" onclick="openSettings()" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+    </button>
     <button class="ctrl-btn active" id="btn-mc" onclick="setView('mc')">Minecraft</button>
     <button class="ctrl-btn" id="btn-sat" onclick="setView('sat')">Satellite</button>
     <button class="ctrl-btn" id="btn-roads" onclick="setView('roads')">Roads</button>
   </div>
+
+  <!-- Map item toggle — shown during navigation -->
+  <div id="nav-map-toggle" onclick="toggleNavPanel()" title="Show route"></div>
 
   <!-- Search + place card + directions - top left -->
   <div id="search-panel">
@@ -1086,20 +1272,64 @@
     </div>
   </div>
 
-  <div id="coords">X: 0, Z: 0</div>
-
   <div id="portal-overlay"></div>
+  <div id="achievement-container"></div>
 
   <div id="nav-banner">
-    <div id="nav-direction"></div>
-    <div id="nav-distance"></div>
+    <img id="nav-compass" src="/icons/compass_0.png" alt="Compass">
+    <div id="nav-text">
+      <div id="nav-direction"></div>
+      <div id="nav-distance"></div>
+    </div>
   </div>
 
-  <button id="chat-btn" onclick="toggleChat()" title="Chat">T</button>
+  <!-- Right toolbar — inventory hotbar -->
+  <!-- Social buttons — middle-right -->
+  <div id="social-btns">
+    <button id="chat-btn" class="social-btn" onclick="toggleChat()" data-tip="Chat">
+      <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering:pixelated">
+        <rect x="3" y="2" width="10" height="1" fill="#ddd"/>
+        <rect x="2" y="3" width="1" height="7" fill="#eee"/>
+        <rect x="13" y="3" width="1" height="7" fill="#ccc"/>
+        <rect x="3" y="3" width="10" height="7" fill="#ddd"/>
+        <rect x="3" y="10" width="10" height="1" fill="#ccc"/>
+        <rect x="3" y="11" width="3" height="1" fill="#ccc"/>
+        <rect x="3" y="12" width="2" height="1" fill="#bbb"/>
+        <rect x="3" y="13" width="1" height="1" fill="#bbb"/>
+        <rect x="5" y="5" width="6" height="1" fill="#999"/>
+        <rect x="5" y="7" width="4" height="1" fill="#999"/>
+      </svg>
+    </button>
+    <button id="help-btn" class="social-btn" onclick="toggleHelp()" data-tip="Help">?</button>
+    <button id="friends-btn" class="social-btn" onclick="toggleFriends()" data-tip="Friends">
+      <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering:pixelated">
+        <rect x="5" y="2" width="6" height="6" fill="#ddd"/>
+        <rect x="6" y="4" width="1" height="2" fill="#999"/>
+        <rect x="9" y="4" width="1" height="2" fill="#999"/>
+        <rect x="7" y="7" width="2" height="1" fill="#bbb"/>
+        <rect x="3" y="9" width="10" height="1" fill="#ccc"/>
+        <rect x="4" y="10" width="8" height="4" fill="#ddd"/>
+        <rect x="3" y="10" width="1" height="4" fill="#eee"/>
+        <rect x="12" y="10" width="1" height="4" fill="#bbb"/>
+      </svg>
+    </button>
+  </div>
 
-  <button id="friends-btn" onclick="toggleFriends()" title="Friends">&#x1F464;</button>
-
-  <button id="help-btn" onclick="toggleHelp()" title="Help">?</button>
+  <!-- Map toolbar — bottom-right -->
+  <div id="toolbar">
+    <button id="home-btn" class="toolbar-slot" onclick="handleHome()" data-tip="Set Spawn / Go Home">&#x1F6CF;</button>
+    <button id="poi-toggle" class="toolbar-slot" onclick="togglePOIs()" data-tip="Places">
+      <img src="/icons/default.png" alt="POI"/>
+    </button>
+    <button id="locate-btn" class="toolbar-slot" onclick="toggleLocate()" data-tip="My Location">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+      </svg>
+    </button>
+    <div class="toolbar-divider"></div>
+    <button class="toolbar-slot" onclick="map.zoomIn()" data-tip="Zoom In">+</button>
+    <button class="toolbar-slot" onclick="map.zoomOut()" data-tip="Zoom Out">-</button>
+  </div>
 
   <!-- Friends Panel -->
   <div id="friends-panel">
@@ -1116,8 +1346,8 @@
     </div>
   </div>
 
-  <!-- Chat Panel (MC PE style) -->
-  <div id="chat-panel">
+  <!-- Chat — always present, .open toggles full mode -->
+  <div id="chat-box">
     <div id="chat-messages"></div>
     <div id="chat-input-row">
       <input id="chat-input" type="text" placeholder="Type a message..." maxlength="200" autocomplete="off" />
@@ -1125,29 +1355,11 @@
     </div>
   </div>
 
-  <button id="home-btn" onclick="handleHome()" title="Hold to set spawn, click to go home">&#x1F6CF;</button>
-
-  <button id="poi-toggle" onclick="togglePOIs()" title="Show places">
-    <img src="/icons/default.png" alt="POI"/>
-  </button>
-
-  <button id="locate-btn" onclick="toggleLocate()" title="Show my location">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
-      <circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-    </svg>
-  </button>
-
-  <button id="settings-btn" onclick="openSettings()" title="Settings">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-    </svg>
-  </button>
-
   <div id="night-overlay"></div>
   <div id="gloom-overlay"></div>
   <canvas id="weather-canvas"></canvas>
 
+  <!-- Clock — standalone focal element, bottom-left -->
   <div id="clock-hud">
     <img id="mc-clock" src="/clock/clock_00.png" alt="clock"/>
     <div id="clock-info">
@@ -1156,17 +1368,15 @@
     </div>
   </div>
 
+  <!-- Coords — HUD overlay, bottom-center -->
+  <div id="coords">X: 0, Z: 0</div>
+
   <div id="settings-overlay">
     <div id="settings-title">Game Menu</div>
     <div id="settings-body">
       <div class="mc-btn" onclick="closeSettings()">Back to Game</div>
 
       <div class="mc-btn-spacer"></div>
-
-      <div class="mc-btn-row">
-        <div class="mc-btn" id="toggle-sfx" onclick="toggleSetting('sfx')">Sound Effects: <span class="btn-val">ON</span></div>
-        <div class="mc-btn" id="toggle-ambient" onclick="toggleSetting('ambient')">Ambient: <span class="btn-val off">OFF</span></div>
-      </div>
 
       <div class="mc-btn-row">
         <div class="mc-btn" id="toggle-night" onclick="toggleSetting('night')">Real-Time Lighting: <span class="btn-val off">OFF</span></div>
@@ -1178,15 +1388,17 @@
         <div class="mc-btn" id="toggle-weather" onclick="toggleSetting('weather')">Weather: <span class="btn-val">ON</span></div>
       </div>
 
-      <div class="mc-slider-wrap" id="volume-slider" onmousedown="startVolumeDrag(event)" ontouchstart="startVolumeDrag(event)">
-        <div class="mc-slider-fill" id="vol-fill"></div>
-        <div class="mc-slider-knob" id="vol-knob"></div>
-        <div class="mc-slider-label" id="vol-label">Volume: 50%</div>
+      <div class="mc-btn-row">
+        <div class="mc-btn" id="toggle-coords" onclick="toggleSetting('coords')">Coordinates: <span class="btn-val">ON</span></div>
+        <div class="mc-btn" id="toggle-chatnotify" onclick="toggleSetting('chatnotify')">Chat Notify: <span class="btn-val">ON</span></div>
       </div>
+
+      <div class="mc-btn" onclick="openAudioSettings()">Audio Settings...</div>
 
       <div class="mc-btn-spacer"></div>
 
       <div class="mc-btn" onclick="openCheats()">Cheats</div>
+      <div class="mc-btn" onclick="openDangerZone()">Danger Zone</div>
 
       <div class="mc-btn" id="menu-signout" onclick="menuSignOut()" style="display:none">Sign Out</div>
       <div class="mc-btn" id="menu-title" onclick="backToTitle()">Disconnect</div>
@@ -1197,15 +1409,85 @@
   <div id="cheats-overlay">
     <div id="settings-title">Cheats</div>
     <div id="settings-body">
-      <div class="mc-btn" id="toggle-forceday" onclick="toggleSetting('forceday')">Force Day: <span class="btn-val off">OFF</span></div>
-      <div class="mc-btn" id="toggle-forcenight" onclick="toggleSetting('forcenight')">Force Night: <span class="btn-val off">OFF</span></div>
       <div class="mc-btn-row">
+        <div class="mc-btn" id="toggle-forcedawn" onclick="toggleSetting('forcedawn')">Force Dawn: <span class="btn-val off">OFF</span></div>
+        <div class="mc-btn" id="toggle-forceday" onclick="toggleSetting('forceday')">Force Day: <span class="btn-val off">OFF</span></div>
+      </div>
+      <div class="mc-btn-row">
+        <div class="mc-btn" id="toggle-forcedusk" onclick="toggleSetting('forcedusk')">Force Dusk: <span class="btn-val off">OFF</span></div>
+        <div class="mc-btn" id="toggle-forcenight" onclick="toggleSetting('forcenight')">Force Night: <span class="btn-val off">OFF</span></div>
+      </div>
+
+      <div class="mc-btn-spacer"></div>
+
+      <div class="mc-btn-row">
+        <div class="mc-btn" id="toggle-forceclear" onclick="toggleSetting('forceclear')">Force Clear: <span class="btn-val off">OFF</span></div>
         <div class="mc-btn" id="toggle-forcerain" onclick="toggleSetting('forcerain')">Force Rain: <span class="btn-val off">OFF</span></div>
+      </div>
+      <div class="mc-btn-row">
+        <div class="mc-btn" id="toggle-forcethunder" onclick="toggleSetting('forcethunder')">Force Thunder: <span class="btn-val off">OFF</span></div>
         <div class="mc-btn" id="toggle-forcesnow" onclick="toggleSetting('forcesnow')">Force Snow: <span class="btn-val off">OFF</span></div>
       </div>
-      <div class="mc-btn" onclick="clearTileCache()">Clear Tile Cache</div>
+
       <div class="mc-btn-spacer"></div>
+
+      <div class="mc-btn" onclick="clearTileCache()">Clear Tile Cache</div>
       <div class="mc-btn" onclick="closeCheats()">Done</div>
+    </div>
+  </div>
+
+  <!-- Danger Zone menu -->
+  <div id="danger-overlay">
+    <div id="settings-title" style="color:#ff5555">Danger Zone</div>
+    <div id="settings-body">
+      <div class="mc-btn" onclick="confirmAction('reset_achievements', 'Reset all achievements?', resetAchievements)">Reset Achievements</div>
+      <div class="mc-btn" onclick="confirmAction('delete_account', 'Permanently delete your account and all data?', deleteAccount)" style="color:#ff5555">Delete Account</div>
+
+      <div class="mc-btn-spacer"></div>
+
+      <div class="mc-btn" onclick="closeDangerZone()">Back</div>
+    </div>
+  </div>
+
+  <!-- Audio Settings -->
+  <div id="audio-overlay">
+    <div id="settings-title">Audio Settings</div>
+    <div id="settings-body">
+      <div class="mc-btn" id="toggle-sfx" onclick="toggleSetting('sfx')">Sound Effects: <span class="btn-val">ON</span></div>
+      <div class="mc-btn" id="toggle-ambient" onclick="toggleSetting('ambient')">Ambient Sounds: <span class="btn-val off">OFF</span></div>
+
+      <div class="mc-btn-spacer"></div>
+
+      <div class="mc-btn" id="toggle-music" onclick="toggleSetting('music')">Music: <span class="btn-val off">OFF</span></div>
+      <div class="mc-btn" id="music-track-btn" onclick="nextMusicTrack()">Music Track: <span class="btn-val" id="music-track-name">Sweden</span></div>
+
+      <div class="mc-slider-wrap" id="volume-slider" onmousedown="startVolumeDrag(event)" ontouchstart="startVolumeDrag(event)">
+        <div class="mc-slider-fill" id="vol-fill"></div>
+        <div class="mc-slider-knob" id="vol-knob"></div>
+        <div class="mc-slider-label" id="vol-label">Master Volume: 50%</div>
+      </div>
+
+      <div class="mc-slider-wrap" id="music-vol-slider" onmousedown="startMusicVolDrag(event)" ontouchstart="startMusicVolDrag(event)">
+        <div class="mc-slider-fill" id="music-vol-fill"></div>
+        <div class="mc-slider-knob" id="music-vol-knob"></div>
+        <div class="mc-slider-label" id="music-vol-label">Music Volume: 30%</div>
+      </div>
+
+      <div class="mc-btn-spacer"></div>
+
+      <div class="mc-btn" onclick="closeAudioSettings()">Done</div>
+    </div>
+  </div>
+
+  <!-- Confirmation dialog -->
+  <div id="confirm-overlay">
+    <div id="settings-title">Are you sure?</div>
+    <div id="settings-body">
+      <div id="confirm-text" style="font-family:'Minecraft',monospace;font-size:12px;color:#aaa;text-align:center;padding:8px 0;text-shadow:1px 1px 0 #3f3f3f"></div>
+      <div class="mc-btn-row">
+        <div class="mc-btn" id="confirm-yes" style="color:#ff5555">Yes, do it</div>
+        <div class="mc-btn" onclick="closeConfirm()">Cancel</div>
+      </div>
     </div>
   </div>
 
@@ -1265,13 +1547,20 @@
 
     function showAuth(mode) {
       authMode = mode;
-      document.getElementById('auth-title').textContent =
-        mode === 'register' ? 'Create New Account' : 'Sign In';
-      document.getElementById('auth-submit').textContent =
-        mode === 'register' ? 'Create Account' : 'Sign In';
+      var isReg = mode === 'register';
+      document.getElementById('auth-title').textContent = isReg ? 'Create New World' : 'Sign In';
+      document.getElementById('auth-submit').textContent = isReg ? 'Create New World' : 'Sign In';
       document.getElementById('auth-error').textContent = '';
       document.getElementById('auth-name').value = '';
       document.getElementById('auth-pass').value = '';
+      // Show/hide confirm password for registration
+      document.getElementById('auth-confirm').style.display = isReg ? '' : 'none';
+      document.getElementById('auth-confirm-label').style.display = isReg ? '' : 'none';
+      document.getElementById('auth-confirm').value = '';
+      // Update labels
+      var labels = document.querySelectorAll('.auth-label');
+      if (labels[0]) labels[0].textContent = 'Player Name';
+      if (labels[1]) labels[1].textContent = isReg ? 'Create Password' : 'Password';
       document.getElementById('auth-screen').classList.add('open');
       document.getElementById('auth-name').focus();
     }
@@ -1283,11 +1572,17 @@
     async function submitAuth() {
       const playerName = document.getElementById('auth-name').value.trim();
       const password = document.getElementById('auth-pass').value;
+      const confirm = document.getElementById('auth-confirm').value;
       const errorEl = document.getElementById('auth-error');
       errorEl.textContent = '';
 
       if (!playerName || !password) {
         errorEl.textContent = 'Fill in all fields';
+        return;
+      }
+
+      if (authMode === 'register' && password !== confirm) {
+        errorEl.textContent = 'Passwords do not match';
         return;
       }
 
@@ -1372,6 +1667,8 @@
           setTimeout(() => {
             loadScreen.classList.remove('open');
             document.getElementById('title-screen').classList.add('hidden');
+            // First time entering the world
+            setTimeout(function() { tryAchievement('first_world', 'Achievement Made!', 'Into the World', '/icons/ender_eye.png'); }, 1500);
           }, 400);
         }
       }, isNewWorld ? 120 : 80);
@@ -1419,7 +1716,7 @@
     const defaultCenter = savedLoc ? [savedLoc.lat, savedLoc.lng] : [40.767, -73.975];
     const defaultZoom = savedLoc ? (savedLoc.zoom || 16) : 16;
     const map = L.map('map', { center: defaultCenter, zoom: defaultZoom, minZoom: 2, maxZoom: 18, zoomControl: false });
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // Zoom controls are in #toolbar — no Leaflet zoom widget
 
     // Try GPS on first load (if no saved location)
     // Auto-enable location tracking on load
@@ -1433,7 +1730,7 @@
       localStorage.setItem('mc-last-location', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: map.getZoom() }));
     });
 
-    const mcLayer = L.tileLayer('/tiles/{z}/{x}/{y}.png?v=' + Date.now(), { maxNativeZoom: 16, maxZoom: 18, crossOrigin: 'anonymous', attribution: 'Minecraft Map | &copy; OSM', keepBuffer: 10, updateWhenZooming: false });
+    const mcLayer = L.tileLayer('/tiles/{z}/{x}/{y}.png?v=' + Date.now(), { minNativeZoom: 16, maxNativeZoom: 16, minZoom: 2, maxZoom: 18, crossOrigin: 'anonymous', attribution: 'Minecraft Map | &copy; OSM', keepBuffer: 10, updateWhenZooming: false });
     const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '&copy; Esri' });
     const roadsLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OSM' });
     let activeLayer = mcLayer;
@@ -1609,8 +1906,15 @@
     }
 
     function closeDirections() {
+      // If navigating, just minimize the panel — don't end navigation
+      if (navActive) {
+        SFX.play('wood_click', 0.3);
+        document.getElementById('dir-panel').classList.add('nav-collapsed');
+        document.getElementById('search-panel').style.display = 'none';
+        document.getElementById('nav-map-toggle').classList.add('open');
+        return;
+      }
       SFX.play('chestclosed', 0.35);
-      stopNavigation();
       document.getElementById('dir-panel').classList.remove('open');
       document.getElementById('dir-info').style.display = 'none';
       document.getElementById('dir-steps').classList.remove('open');
@@ -1794,6 +2098,7 @@
     let wsReconnectTimer = null;
     const friendMarkers = {};
 
+    let wsLocInterval = null;
     function connectWS() {
       if (!currentPlayer) return;
       const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1801,9 +2106,10 @@
 
       ws.onopen = function() {
         console.log('[WS] Connected');
-        // Start sending location every 10s
+        // Start sending location every 10s (clear any previous interval first)
+        if (wsLocInterval) clearInterval(wsLocInterval);
         if (navigator.geolocation) {
-          setInterval(function() {
+          wsLocInterval = setInterval(function() {
             if (ws && ws.readyState === WebSocket.OPEN) {
               navigator.geolocation.getCurrentPosition(function(pos) {
                 ws.send(JSON.stringify({ type: 'location', lat: pos.coords.latitude, lng: pos.coords.longitude }));
@@ -1914,21 +2220,22 @@
           document.getElementById('friends-btn').classList.remove('has-pending');
         }
 
-        // Friends list
+        // Friends list — always show section
         var listDiv = document.getElementById('fp-friends-list');
-        listDiv.innerHTML = '';
+        listDiv.innerHTML = '<div class="fp-section">Friends</div>';
         if (data.friends && data.friends.length > 0) {
-          listDiv.innerHTML = '<div class="fp-section">Friends</div>';
           data.friends.forEach(function(f) {
             var el = document.createElement('div');
             el.className = 'fp-friend';
+            var inviteBtn = f.online ? '<button class="fp-action accept" onclick="inviteFriend(\'' + f.player_name + '\')">Invite</button>' : '';
             el.innerHTML = '<div class="fp-dot ' + (f.online ? 'online' : 'offline') + '"></div>' +
               '<div class="fp-name">' + f.player_name + '</div>' +
+              inviteBtn +
               '<button class="fp-action" onclick="removeFriend(' + f.id + ')">x</button>';
             listDiv.appendChild(el);
           });
-        } else if (!data.pending || data.pending.length === 0) {
-          listDiv.innerHTML = '<div class="fp-msg">No friends yet. Share your code!</div>';
+        } else {
+          listDiv.innerHTML += '<div class="fp-msg">No friends yet. Share your code!</div>';
         }
       }).catch(function() {});
     }
@@ -1942,6 +2249,22 @@
           setTimeout(function() { document.getElementById('fp-status').textContent = ''; }, 2000);
         });
       }
+    }
+
+    function inviteFriend(name) {
+      var c = map.getCenter();
+      var z = map.getZoom();
+      var link = window.location.origin + '/#' + c.lat.toFixed(5) + ',' + c.lng.toFixed(5) + ',' + z;
+      // Send invite via WS if connected
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'invite', targetName: name, link: link }));
+        document.getElementById('fp-status').textContent = 'Invite sent to ' + name + '!';
+      } else {
+        navigator.clipboard.writeText(link);
+        document.getElementById('fp-status').textContent = 'Link copied!';
+      }
+      SFX.play('orb', 0.3);
+      setTimeout(function() { document.getElementById('fp-status').textContent = ''; }, 3000);
     }
 
     function addFriend() {
@@ -1974,40 +2297,69 @@
 
     // ---- Chat (MC PE style) ----
     var chatOpen = false;
+    var CHAT_FADE_MS = 60000; // 60s preview lifetime
 
     function toggleChat() {
       chatOpen = !chatOpen;
-      document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+      document.getElementById('chat-box').classList.toggle('open', chatOpen);
       SFX.play('click', 0.3);
-      if (chatOpen) document.getElementById('chat-input').focus();
+      if (chatOpen) {
+        // Unfade all messages when opening
+        document.querySelectorAll('.chat-msg.faded').forEach(function(m) { m.classList.remove('faded'); });
+        document.getElementById('chat-input').focus();
+        document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+      }
     }
 
     function sendChat() {
       var input = document.getElementById('chat-input');
       var content = input.value.trim();
-      if (!content || !ws || ws.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({ type: 'chat', content: content }));
+      if (!content) return;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'chat', content: content }));
+      } else {
+        var name = (currentPlayer && currentPlayer.playerName) || 'You';
+        addChatMessage(name, content, true);
+      }
       input.value = '';
       input.focus();
+      tryAchievement('first_chat', 'Achievement Made!', 'Is Anybody There?');
     }
 
     document.getElementById('chat-input').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') sendChat();
-      e.stopPropagation(); // Don't trigger WASD panning
+      if (e.key === 'Enter') { sendChat(); e.preventDefault(); }
+      if (e.key === 'Escape') { toggleChat(); e.preventDefault(); }
+      e.stopPropagation();
     });
+
+    // T key shortcut
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 't' || e.key === 'T') {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+        if (document.querySelector('#settings-overlay.open') || document.querySelector('#cheats-overlay.open') || document.querySelector('#help-overlay.open')) return;
+        e.preventDefault();
+        if (!chatOpen) toggleChat();
+      }
+    });
+
+    // Schedule a message to fade after 60s (only matters when chat is closed)
+    function scheduleMsgFade(el) {
+      setTimeout(function() {
+        if (!chatOpen) el.classList.add('faded');
+      }, CHAT_FADE_MS);
+    }
 
     function addChatMessage(name, content, isSelf) {
       var div = document.getElementById('chat-messages');
       var el = document.createElement('div');
       el.className = 'chat-msg';
+      // If chat notify is off and chat is closed, start faded (no preview)
+      if (!settings.chatnotify && !chatOpen && !isSelf) el.className += ' faded';
       el.innerHTML = '<span class="chat-name' + (isSelf ? ' self' : '') + '">&lt;' + name + '&gt;</span> ' + content.replace(/</g, '&lt;');
       div.appendChild(el);
       div.scrollTop = div.scrollHeight;
-      // Auto-show chat when message received
-      if (!chatOpen && !isSelf) {
-        document.getElementById('chat-panel').classList.add('open');
-        chatOpen = true;
-      }
+      while (div.children.length > 100) div.removeChild(div.firstChild);
+      scheduleMsgFade(el);
     }
 
     function addChatSystem(text) {
@@ -2017,6 +2369,8 @@
       el.innerHTML = '<span class="chat-system">' + text + '</span>';
       div.appendChild(el);
       div.scrollTop = div.scrollHeight;
+      while (div.children.length > 100) div.removeChild(div.firstChild);
+      scheduleMsgFade(el);
     }
 
     // Connect WS after login
@@ -2139,13 +2493,19 @@
       navStepIdx = 0;
       btn.textContent = 'Stop Navigation';
       btn.classList.add('navigating');
+      document.getElementById('dir-close').textContent = 'Minimize';
       document.getElementById('nav-banner').classList.add('open');
+      // Collapse dir-panel, show map item icon
+      document.getElementById('dir-panel').classList.add('nav-collapsed');
+      document.getElementById('search-panel').style.display = 'none';
+      document.getElementById('nav-map-toggle').classList.add('open');
       updateNavBanner();
 
       navWatchId = navigator.geolocation.watchPosition(
         pos => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
+          navUserLat = lat; navUserLng = lng;
 
           // Find closest upcoming step
           let closestIdx = navStepIdx;
@@ -2171,6 +2531,7 @@
           }
 
           updateNavBanner();
+          updateNavCompass();
           highlightCurrentStep();
 
           // Center map on user
@@ -2195,11 +2556,34 @@
 
     function stopNavigation() {
       navActive = false;
+      navUserLat = null; navUserLng = null;
       if (navWatchId !== null) { navigator.geolocation.clearWatch(navWatchId); navWatchId = null; }
       document.getElementById('nav-banner').classList.remove('open');
+      document.getElementById('nav-compass').src = '/icons/compass_0.png';
+      navCompassFrame = -1;
+      // Restore dir-panel and search
+      document.getElementById('dir-panel').classList.remove('nav-collapsed');
+      document.getElementById('search-panel').style.display = '';
+      document.getElementById('nav-map-toggle').classList.remove('open');
+      document.getElementById('dir-close').textContent = 'Close';
       const btn = document.getElementById('nav-start-btn');
       if (btn) { btn.textContent = 'Start Navigation'; btn.classList.remove('navigating'); }
       document.querySelectorAll('.step-item.active').forEach(el => el.classList.remove('active'));
+    }
+
+    function toggleNavPanel() {
+      const panel = document.getElementById('dir-panel');
+      const searchPanel = document.getElementById('search-panel');
+      if (panel.classList.contains('nav-collapsed')) {
+        // Show the panel temporarily
+        panel.classList.remove('nav-collapsed');
+        searchPanel.style.display = '';
+      } else {
+        // Re-collapse
+        panel.classList.add('nav-collapsed');
+        searchPanel.style.display = 'none';
+      }
+      SFX.play('wood_click', 0.3);
     }
 
     function updateNavBanner() {
@@ -2236,6 +2620,33 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    function bearing(lat1, lon1, lat2, lon2) {
+      const toRad = v => v * Math.PI / 180;
+      const φ1 = toRad(lat1), φ2 = toRad(lat2);
+      const Δλ = toRad(lon2 - lon1);
+      const y = Math.sin(Δλ) * Math.cos(φ2);
+      const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    const COMPASS_FRAMES = 29;
+    // Preload all compass frames to prevent flicker
+    for (let i = 0; i < COMPASS_FRAMES; i++) { const img = new Image(); img.src = '/icons/compass_' + i + '.png'; }
+    let navUserLat = null, navUserLng = null;
+    let navCompassFrame = -1;
+    function updateNavCompass() {
+      if (!navActive || navStepIdx >= navSteps.length || navUserLat == null) return;
+      const step = navSteps[Math.min(navStepIdx + 1, navSteps.length - 1)];
+      const loc = step.maneuver.location;
+      const deg = bearing(navUserLat, navUserLng, loc[1], loc[0]);
+      // Map 0-360 degrees to frame index (0=N, 7≈E, 14≈S, 21≈W)
+      const frame = Math.round(deg / 360 * COMPASS_FRAMES) % COMPASS_FRAMES;
+      if (frame !== navCompassFrame) {
+        navCompassFrame = frame;
+        document.getElementById('nav-compass').src = '/icons/compass_' + frame + '.png';
+      }
+    }
+
     // ---- Player location marker ----
     function makePlayerIcon() {
       const px = 3, c = document.createElement('canvas');
@@ -2245,6 +2656,35 @@
       const colors = ['rgba(0,0,0,0)', '#111', '#f0f0f0', '#b0b0b0'];
       for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) { if (rows[y][x] === 0) continue; ctx.fillStyle = colors[rows[y][x]]; ctx.fillRect(x * px, y * px, px, px); }
       return c.toDataURL();
+    }
+
+    // ---- Achievement toast system ----
+    function showAchievement(title, desc, iconSrc) {
+      var container = document.getElementById('achievement-container');
+      var toast = document.createElement('div');
+      toast.className = 'achievement-toast';
+      var iconHtml = iconSrc
+        ? '<div class="achievement-icon"><img src="' + iconSrc + '" alt=""/></div>'
+        : '<div class="achievement-icon"><span style="color:#55ff55;font-size:14px">★</span></div>';
+      toast.innerHTML = iconHtml +
+        '<div class="achievement-text">' +
+          '<div class="achievement-title">' + title + '</div>' +
+          '<div class="achievement-desc">' + desc + '</div>' +
+        '</div>';
+      container.appendChild(toast);
+      SFX.play('levelup', 0.5);
+      // Remove after animation
+      setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 5200);
+    }
+
+    // Built-in achievements triggered by actions
+    var achievementsEarned = {};
+    try { achievementsEarned = JSON.parse(localStorage.getItem('mc-achievements') || '{}'); } catch {}
+    function tryAchievement(id, title, desc, icon) {
+      if (achievementsEarned[id]) return;
+      achievementsEarned[id] = Date.now();
+      localStorage.setItem('mc-achievements', JSON.stringify(achievementsEarned));
+      showAchievement(title, desc, icon);
     }
 
     let playerMarker = null, watchId = null, heading = 0, locateActive = false;
@@ -2262,6 +2702,7 @@
       }
       if (!navigator.geolocation) return;
       locateActive = true; btn.classList.add('active');
+      tryAchievement('first_locate', 'Achievement Made!', 'Where Am I?');
       const playerIcon = L.icon({ iconUrl: makePlayerIcon(), iconSize: [21, 24], iconAnchor: [10, 12], className: 'player-marker' });
       watchId = navigator.geolocation.watchPosition(
         pos => {
@@ -2319,26 +2760,53 @@
     const settings = {
       sfx: true,
       ambient: false,
+      music: false,
       night: false,
       pois: false,
       frame: true,
       weather: true,
+      coords: true,
+      chatnotify: true,
       forceday: false,
       forcenight: false,
+      forcedawn: false,
+      forcedusk: false,
       forcerain: false,
       forcesnow: false,
+      forcethunder: false,
+      forceclear: false,
     };
     let masterVolume = 0.5;
+    let musicVolume = 0.3;
+    let musicTrackIndex = 0;
+
+    // Music track list — C418 Minecraft Volume Alpha
+    const MUSIC_TRACKS = [
+      { name: 'Sweden', file: 'sweden.ogg' },
+      { name: 'Mice on Venus', file: 'mice_on_venus.ogg' },
+      { name: 'Subwoofer Lullaby', file: 'subwoofer_lullaby.ogg' },
+      { name: 'Wet Hands', file: 'wet_hands.ogg' },
+      { name: 'Haggstrom', file: 'haggstrom.ogg' },
+      { name: 'Clark', file: 'clark.ogg' },
+      { name: 'Danny', file: 'danny.ogg' },
+      { name: 'Living Mice', file: 'living_mice.ogg' },
+      { name: 'Dry Hands', file: 'dry_hands.ogg' },
+      { name: 'Minecraft', file: 'minecraft.ogg' },
+      { name: 'Aria Math', file: 'aria_math.ogg' },
+      { name: 'Key', file: 'key.ogg' },
+    ];
 
     // Load saved settings
     try {
       const saved = JSON.parse(localStorage.getItem('mc-map-settings') || '{}');
       Object.assign(settings, saved);
       masterVolume = saved._volume ?? 0.5;
+      musicVolume = saved._musicVolume ?? 0.3;
+      musicTrackIndex = saved._musicTrack ?? 0;
     } catch {}
 
     function saveSettings() {
-      localStorage.setItem('mc-map-settings', JSON.stringify({ ...settings, _volume: masterVolume }));
+      localStorage.setItem('mc-map-settings', JSON.stringify({ ...settings, _volume: masterVolume, _musicVolume: musicVolume, _musicTrack: musicTrackIndex }));
     }
 
     // Update button label text for a toggle
@@ -2364,10 +2832,13 @@
     function applySettings() {
       Object.keys(settings).forEach(updateToggleBtn);
       updateVolumeSlider();
+      updateMusicUI();
       document.getElementById('night-overlay').classList.toggle('on', settings.night);
       document.querySelector('.map-frame').style.display = settings.frame ? '' : 'none';
+      document.getElementById('coords').style.display = settings.coords ? '' : 'none';
       if (settings.pois !== poisActive) togglePOIs();
       if (settings.ambient) startAmbient(); else stopAmbient();
+      if (settings.music) startMusic();
     }
 
     function openSettings() {
@@ -2404,19 +2875,25 @@
       if (btn) btn.style.display = currentPlayer ? '' : 'none';
     }
 
+    const TOD_KEYS = ['forceday', 'forcenight', 'forcedawn', 'forcedusk'];
+    const WEATHER_KEYS = ['forcerain', 'forcesnow', 'forcethunder', 'forceclear'];
+
     function toggleSetting(key) {
       settings[key] = !settings[key];
       SFX.play('click', 0.4);
 
-      // Force day/night are mutually exclusive
-      if (key === 'forceday' && settings.forceday) { settings.forcenight = false; updateToggleBtn('forcenight'); }
-      if (key === 'forcenight' && settings.forcenight) { settings.forceday = false; updateToggleBtn('forceday'); }
-      // Force rain/snow are mutually exclusive
-      if (key === 'forcerain' && settings.forcerain) { settings.forcesnow = false; updateToggleBtn('forcesnow'); }
-      if (key === 'forcesnow' && settings.forcesnow) { settings.forcerain = false; updateToggleBtn('forcerain'); }
+      // Mutual exclusion: TOD cheats
+      if (TOD_KEYS.includes(key) && settings[key]) {
+        TOD_KEYS.forEach(function(k) { if (k !== key) { settings[k] = false; updateToggleBtn(k); } });
+      }
+      // Mutual exclusion: weather cheats
+      if (WEATHER_KEYS.includes(key) && settings[key]) {
+        WEATHER_KEYS.forEach(function(k) { if (k !== key) { settings[k] = false; updateToggleBtn(k); } });
+      }
 
       updateToggleBtn(key);
 
+      // --- Settings actions ---
       if (key === 'night') {
         const overlay = document.getElementById('night-overlay');
         if (settings.night) { overlay.classList.add('on'); updateClock(); }
@@ -2425,15 +2902,26 @@
       if (key === 'frame') document.querySelector('.map-frame').style.display = settings.frame ? '' : 'none';
       if (key === 'pois' && settings.pois !== poisActive) togglePOIs();
       if (key === 'ambient') { if (settings.ambient) startAmbient(); else stopAmbient(); }
+      if (key === 'music') { if (settings.music) startMusic(); else stopMusic(); updateMusicUI(); }
+      if (key === 'coords') document.getElementById('coords').style.display = settings.coords ? '' : 'none';
       if (key === 'weather') {
         document.getElementById('clock-hud').style.display = settings.weather ? '' : 'none';
         if (!settings.weather) stopWeatherParticles();
       }
-      // Cheat: force weather particles
+
+      // --- Weather cheats ---
       if (key === 'forcerain') { if (settings.forcerain) startWeatherParticles('rain'); else stopWeatherParticles(); }
       if (key === 'forcesnow') { if (settings.forcesnow) startWeatherParticles('snow'); else stopWeatherParticles(); }
-      // Cheat: force time of day
-      if (key === 'forceday' || key === 'forcenight') applyForcedTOD();
+      if (key === 'forcethunder') {
+        if (settings.forcethunder) { startWeatherParticles('rain'); document.body.classList.add('gloom'); document.getElementById('gloom-overlay').classList.add('on'); }
+        else { stopWeatherParticles(); document.body.classList.remove('gloom'); document.getElementById('gloom-overlay').classList.remove('on'); }
+      }
+      if (key === 'forceclear') {
+        if (settings.forceclear) { stopWeatherParticles(); document.body.classList.remove('gloom', 'snowy'); document.getElementById('gloom-overlay').classList.remove('on'); }
+      }
+
+      // --- TOD cheats ---
+      if (TOD_KEYS.includes(key)) applyForcedTOD();
       saveSettings();
     }
 
@@ -2445,6 +2933,12 @@
       } else if (settings.forcenight) {
         overlay.classList.add('on');
         overlay.style.background = 'rgba(10,10,40,0.5)';
+      } else if (settings.forcedawn) {
+        overlay.classList.add('on');
+        overlay.style.background = 'rgba(40,20,60,0.25)';
+      } else if (settings.forcedusk) {
+        overlay.classList.add('on');
+        overlay.style.background = 'rgba(50,20,30,0.3)';
       } else {
         if (settings.night) updateClock();
         else { overlay.classList.remove('on'); overlay.style.background = ''; }
@@ -2463,6 +2957,137 @@
       document.getElementById('settings-overlay').classList.add('open');
     }
 
+    // ---- Audio Settings ----
+    function openAudioSettings() {
+      SFX.play('click', 0.4);
+      document.getElementById('settings-overlay').classList.remove('open');
+      document.getElementById('audio-overlay').classList.add('open');
+      updateMusicUI();
+    }
+    function closeAudioSettings() {
+      SFX.play('click', 0.4);
+      document.getElementById('audio-overlay').classList.remove('open');
+      document.getElementById('settings-overlay').classList.add('open');
+    }
+
+    // ---- Music Player ----
+    let musicAudio = null;
+    function startMusic() {
+      if (!settings.music) return;
+      stopMusic();
+      const track = MUSIC_TRACKS[musicTrackIndex];
+      if (!track) return;
+      musicAudio = new Audio('/sounds/music/' + track.file);
+      musicAudio.volume = musicVolume * masterVolume;
+      musicAudio.addEventListener('ended', function() {
+        musicTrackIndex = (musicTrackIndex + 1) % MUSIC_TRACKS.length;
+        updateMusicUI(); saveSettings();
+        setTimeout(startMusic, 3000);
+      });
+      musicAudio.addEventListener('error', function() {
+        console.log('[music] Not found: ' + track.file + ', skipping');
+        musicTrackIndex = (musicTrackIndex + 1) % MUSIC_TRACKS.length;
+        updateMusicUI(); saveSettings();
+      });
+      musicAudio.play().catch(function() {});
+    }
+    function stopMusic() {
+      if (musicAudio) { musicAudio.pause(); musicAudio.src = ''; musicAudio = null; }
+    }
+    function nextMusicTrack() {
+      SFX.play('click', 0.4);
+      musicTrackIndex = (musicTrackIndex + 1) % MUSIC_TRACKS.length;
+      updateMusicUI(); saveSettings();
+      if (settings.music) startMusic();
+    }
+    function updateMusicUI() {
+      var nameEl = document.getElementById('music-track-name');
+      var trackBtn = document.getElementById('music-track-btn');
+      var volSlider = document.getElementById('music-vol-slider');
+      if (nameEl) nameEl.textContent = MUSIC_TRACKS[musicTrackIndex]?.name || '---';
+      if (trackBtn) trackBtn.classList.toggle('disabled', !settings.music);
+      if (volSlider) volSlider.classList.toggle('disabled', !settings.music);
+      var fill = document.getElementById('music-vol-fill');
+      var knob = document.getElementById('music-vol-knob');
+      var label = document.getElementById('music-vol-label');
+      if (fill) fill.style.width = (musicVolume * 100) + '%';
+      if (knob) knob.style.left = 'calc(' + (musicVolume * 100) + '% - 4px)';
+      if (label) label.textContent = 'Music Volume: ' + Math.round(musicVolume * 100) + '%';
+    }
+    function startMusicVolDrag(e) {
+      e.preventDefault();
+      var slider = document.getElementById('music-vol-slider');
+      if (slider.classList.contains('disabled')) return;
+      function update(cx) {
+        var r = slider.getBoundingClientRect();
+        musicVolume = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+        updateMusicUI();
+        if (musicAudio) musicAudio.volume = musicVolume * masterVolume;
+      }
+      function onMove(ev) { update(ev.touches ? ev.touches[0].clientX : ev.clientX); }
+      function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp); saveSettings(); }
+      update(e.touches ? e.touches[0].clientX : e.clientX);
+      document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove); document.addEventListener('touchend', onUp);
+    }
+
+    function openDangerZone() {
+      SFX.play('click', 0.4);
+      document.getElementById('settings-overlay').classList.remove('open');
+      document.getElementById('danger-overlay').classList.add('open');
+    }
+
+    function closeDangerZone() {
+      SFX.play('click', 0.4);
+      document.getElementById('danger-overlay').classList.remove('open');
+      document.getElementById('settings-overlay').classList.add('open');
+    }
+
+    var pendingConfirmAction = null;
+    function confirmAction(id, message, callback) {
+      SFX.play('click', 0.4);
+      document.getElementById('confirm-text').textContent = message;
+      document.getElementById('confirm-yes').onclick = function() {
+        callback();
+        closeConfirm();
+      };
+      document.getElementById('confirm-overlay').classList.add('open');
+    }
+
+    function closeConfirm() {
+      SFX.play('click', 0.4);
+      document.getElementById('confirm-overlay').classList.remove('open');
+    }
+
+    function resetAchievements() {
+      achievementsEarned = {};
+      localStorage.removeItem('mc-achievements');
+      SFX.play('levelup', 0.3);
+      showAchievement('Reset Complete', 'All achievements cleared');
+    }
+
+    function deleteAccount() {
+      if (!currentPlayer) return;
+      fetch('/api/account', { method: 'DELETE' }).then(function(r) {
+        if (r.ok) {
+          localStorage.removeItem('mc-player');
+          localStorage.removeItem('mc-achievements');
+          localStorage.removeItem('mc-home');
+          localStorage.removeItem('mc-map-settings');
+          localStorage.removeItem('mc-last-location');
+          SFX.play('chestclosed', 0.4);
+          // Close all overlays and go to title
+          document.getElementById('confirm-overlay').classList.remove('open');
+          document.getElementById('danger-overlay').classList.remove('open');
+          document.getElementById('settings-overlay').classList.remove('open');
+          document.getElementById('title-screen').classList.remove('hidden');
+          currentPlayer = null;
+        }
+      }).catch(function() {
+        document.getElementById('confirm-text').textContent = 'Failed to delete. Try again.';
+      });
+    }
+
     function clearTileCache() {
       SFX.play('levelup', 0.3);
       if (typeof caches !== 'undefined') caches.keys().then(k => k.forEach(c => caches.delete(c)));
@@ -2478,6 +3103,7 @@
         const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
         masterVolume = pct;
         if (ambientGain) ambientGain.gain.value = masterVolume * 0.15;
+        if (musicAudio) musicAudio.volume = musicVolume * masterVolume;
         updateVolumeSlider();
         saveSettings();
       }
@@ -2691,6 +3317,7 @@
       SFX.play('chestopen', 0.3);
       setTimeout(() => { map.setView([lat, lng], 16, { animate: false }); }, 400);
       setTimeout(() => { overlay.classList.remove('active'); }, 1200);
+      tryAchievement('first_portal', 'Achievement Made!', 'We Need to Go Deeper', '/icons/portal.png');
     }
 
     // Portal for distant searches (>5km)
@@ -2745,6 +3372,7 @@
           localStorage.setItem('mc-home', JSON.stringify(homeLocation));
           updateHomeBtn(); showHomeMarker();
           SFX.play('levelup', 0.3);
+          tryAchievement('set_spawn', 'Achievement Made!', 'Sweet Dreams');
         }, 800);
       });
       homeBtn.addEventListener('mouseup', () => {
@@ -2792,6 +3420,17 @@
       const tile = e.tile;
       tile.style.opacity = '1';
       tile.style.transition = 'none';
+
+      // Auto-retry failed tiles with exponential backoff
+      var coords = e.coords;
+      var retryCount = parseInt(tile.dataset.retries || '0');
+      if (retryCount < 5) {
+        var delay = Math.min(5000 * Math.pow(1.5, retryCount), 30000); // 5s, 7.5s, 11s, 17s, 25s
+        setTimeout(function() {
+          tile.dataset.retries = String(retryCount + 1);
+          tile.src = '/tiles/' + coords.z + '/' + coords.x + '/' + coords.y + '.png?v=' + Date.now();
+        }, delay);
+      }
     });
 
     // ---- Background tile prefetcher ----
@@ -3108,7 +3747,7 @@
     function updateTODLighting(hour) {
       if (!settings.night) return;
       // Don't override forced day/night cheats
-      if (settings.forceday || settings.forcenight) return;
+      if (settings.forceday || settings.forcenight || settings.forcedawn || settings.forcedusk) return;
       const overlay = document.getElementById('night-overlay');
       overlay.classList.add('on');
 
@@ -3151,7 +3790,7 @@
         document.getElementById('weather-text').textContent = temp + '°F ' + cond.text;
 
         // Start/stop weather particles (but don't override force cheats)
-        if (!settings.forcerain && !settings.forcesnow) {
+        if (!settings.forcerain && !settings.forcesnow && !settings.forcethunder && !settings.forceclear) {
           if (cond.rain || cond.snow) startWeatherParticles(cond.snow ? 'snow' : 'rain');
           else stopWeatherParticles();
         }

@@ -24,7 +24,8 @@ import type { BoundingBox, HeightMap } from './types.js';
 
 const app = express();
 const PORT = 3001;
-const CACHE_DIR = resolve('tile-cache');
+const TILE_VERSION = 'v1';
+const CACHE_DIR = resolve('tile-cache', TILE_VERSION);
 mkdirSync(CACHE_DIR, { recursive: true });
 
 // ============================================
@@ -195,7 +196,8 @@ app.post('/api/waypoints', (req, res) => {
 app.delete('/api/waypoints/:id', (req, res) => {
   const session = getSession(req.cookies?.mc_session);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
-  db.prepare('DELETE FROM waypoints WHERE id = ? AND player_id = ?').run(req.params.id, session.playerId);
+  const result = db.prepare('DELETE FROM waypoints WHERE id = ? AND player_id = ?').run(req.params.id, session.playerId);
+  if (result.changes === 0) return res.status(403).json({ error: 'Not your waypoint' });
   res.json({ ok: true });
 });
 
@@ -206,17 +208,18 @@ app.post('/api/achievement', (req, res) => {
   const { key } = req.body;
   if (!key) return res.status(400).json({ error: 'achievement key required' });
 
-  try {
-    db.prepare('INSERT OR IGNORE INTO achievements (player_id, achievement_key) VALUES (?, ?)').run(session.playerId, key);
-    // Award XP for new achievement
+  const result = db.prepare('INSERT OR IGNORE INTO achievements (player_id, achievement_key) VALUES (?, ?)').run(session.playerId, key);
+  if (result.changes > 0) {
+    // New achievement — award XP
     db.prepare('UPDATE players SET xp = xp + 100 WHERE id = ?').run(session.playerId);
     const player = db.prepare('SELECT xp FROM players WHERE id = ?').get(session.playerId) as any;
-    // Level up every 500 XP
     const newLevel = Math.floor(player.xp / 500) + 1;
     db.prepare('UPDATE players SET level = ? WHERE id = ?').run(newLevel, session.playerId);
-    res.json({ ok: true, xp: player.xp, level: newLevel });
-  } catch {
-    res.json({ ok: true }); // Already unlocked
+    res.json({ ok: true, xp: player.xp, level: newLevel, unlocked: true });
+  } else {
+    // Already unlocked — no XP
+    const player = db.prepare('SELECT xp, level FROM players WHERE id = ?').get(session.playerId) as any;
+    res.json({ ok: true, xp: player.xp, level: player.level, unlocked: false });
   }
 });
 
@@ -398,6 +401,8 @@ interface OverpassResult {
   roads: OverpassElement[];
   trees: Array<{lat:number,lon:number}>;
   highwayCount: number;
+  /** Whether the primary query (buildings+roads) returned valid data */
+  primaryQuerySucceeded: boolean;
 }
 
 interface OverpassElement {
@@ -411,87 +416,147 @@ interface OverpassElement {
 const OVERPASS_CACHE = resolve('overpass-cache');
 mkdirSync(OVERPASS_CACHE, { recursive: true });
 
+// Rotate between multiple Overpass servers to avoid rate limits.
+// When local Overpass is running, set OVERPASS_LOCAL=1 to use localhost only.
+const OVERPASS_SERVERS = process.env.OVERPASS_LOCAL
+  ? ['http://localhost:12345/api/interpreter']
+  : [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    ];
+let overpassServerIdx = 0;
+
+// Global concurrency limiter for Overpass — max 2 concurrent requests to avoid 429 storms
+const OVERPASS_MAX_CONCURRENT = 2;
+let overpassInFlight = 0;
+const overpassQueue: Array<() => void> = [];
+
+async function overpassGate(): Promise<void> {
+  if (overpassInFlight < OVERPASS_MAX_CONCURRENT) {
+    overpassInFlight++;
+    return;
+  }
+  return new Promise(resolve => {
+    overpassQueue.push(resolve);
+  });
+}
+
+function overpassRelease(): void {
+  overpassInFlight--;
+  const next = overpassQueue.shift();
+  if (next) {
+    overpassInFlight++;
+    next();
+  }
+}
+
 async function fetchOverpass(south: number, west: number, north: number, east: number): Promise<OverpassResult> {
   // Check disk cache first
-  const cacheKey = `${south.toFixed(4)}_${west.toFixed(4)}_${north.toFixed(4)}_${east.toFixed(4)}`;
+  const cacheKey = `${south.toFixed(6)}_${west.toFixed(6)}_${north.toFixed(6)}_${east.toFixed(6)}`;
   const cachePath = join(OVERPASS_CACHE, `${cacheKey}.json`);
   if (existsSync(cachePath)) {
     try {
       const cached = JSON.parse(readFileSync(cachePath, 'utf8'));
-      // Backfill highwayCount for old cache entries
+      // Backfill fields for old cache entries
       if (cached.highwayCount === undefined) {
         cached.highwayCount = cached.roads?.filter((e: any) => e.tags?.highway)?.length ?? 0;
+      }
+      if (cached.primaryQuerySucceeded === undefined) {
+        cached.primaryQuerySucceeded = true; // assume cached entries were valid
       }
       console.log(`  Overpass: cached (${cached.buildings.length} buildings, ${cached.roads.length} roads, ${cached.highwayCount} highways)`);
       return cached;
     } catch {}
   }
   const bbox = `${south},${west},${north},${east}`;
-  // Query 1: Buildings + roads + surface info
+  // Query 1: Buildings + roads (CRITICAL — tile is incomplete without this)
   const q1 = `[out:json][timeout:25][bbox:${bbox}];(way["building"];way["highway"];);out geom;`;
   // Query 2: Everything else — land, water, leisure, amenities, trees
   const q2 = `[out:json][timeout:25][bbox:${bbox}];(way["natural"];way["waterway"];way["leisure"];way["landuse"];way["amenity"~"parking|school|hospital"];way["barrier"~"fence|wall|hedge"];node["natural"="tree"];node["natural"="tree_row"];);out geom;`;
 
-  const url1 = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q1)}`;
-  const url2 = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q2)}`;
+  const server = OVERPASS_SERVERS[overpassServerIdx++ % OVERPASS_SERVERS.length];
+  const url1 = `${server}?data=${encodeURIComponent(q1)}`;
+  const url2 = `${server}?data=${encodeURIComponent(q2)}`;
 
-  try {
-    // Fetch queries sequentially to avoid Overpass rate limits
-    const fetchJSON = async (url: string) => {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
-          if (res.status === 429 || res.status === 504) {
-            await new Promise(r => setTimeout(r, 2000));
-            continue;
-          }
-          if (!res.ok) return null;
-          const text = await res.text();
-          if (text.startsWith('<')) return null; // XML error response
-          return JSON.parse(text);
-        } catch { continue; }
-      }
-      return null;
-    };
-
-    // Sequential to avoid Overpass rate limits (429/504)
-    const d1 = await fetchJSON(url1);
-    const d2 = await fetchJSON(url2);
-
-    const buildings: OverpassElement[] = [];
-    const roads: OverpassElement[] = [];
-    const trees: Array<{lat:number,lon:number}> = [];
-    let highwayCount = 0;
-
-    const allElements: any[] = [];
-    if (d1) allElements.push(...(d1.elements || []));
-    if (d2) allElements.push(...(d2.elements || []));
-
-    for (const e of allElements) {
-      if (!e.tags) continue;
-      if (e.type === 'node' && e.tags.natural === 'tree' && e.lat && e.lon) {
-        trees.push({ lat: e.lat, lon: e.lon });
+  // Retry with exponential backoff: 2s, 4s, 8s
+  const fetchJSON = async (url: string, label: string) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(25000) });
+        if (res.status === 429 || res.status === 504) {
+          const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
+          console.log(`  Overpass ${label}: ${res.status}, retrying in ${delay / 1000}s (attempt ${attempt + 1}/3)`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        if (!res.ok) {
+          console.log(`  Overpass ${label}: HTTP ${res.status}`);
+          return null;
+        }
+        const text = await res.text();
+        if (text.startsWith('<')) {
+          console.log(`  Overpass ${label}: XML error response (likely timeout)`);
+          const delay = 2000 * Math.pow(2, attempt);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        return JSON.parse(text);
+      } catch (err) {
+        const delay = 2000 * Math.pow(2, attempt);
+        console.log(`  Overpass ${label}: ${err instanceof Error ? err.message : 'fetch error'}, retrying in ${delay / 1000}s (attempt ${attempt + 1}/3)`);
+        await new Promise(r => setTimeout(r, delay));
         continue;
       }
-      if (!e.geometry || e.geometry.length < 2) continue;
-      if (e.tags.building) {
-        buildings.push(e);
-      } else {
-        if (e.tags.highway) highwayCount++;
-        roads.push(e);
-      }
     }
+    console.log(`  Overpass ${label}: FAILED after 3 attempts`);
+    return null;
+  };
 
-    const result = { buildings, roads, trees, highwayCount };
-    // Only cache if we got meaningful data (don't poison cache with empty results)
-    if (buildings.length > 0 || highwayCount > 0) {
-      try { writeFileSync(cachePath, JSON.stringify(result)); } catch {}
-    }
-    return result;
-  } catch {
-    console.log('  Overpass failed, using VersaTiles only');
-    return { buildings: [], roads: [], trees: [], highwayCount: 0 };
+  // Sequential + gated to avoid Overpass rate limits (429/504)
+  await overpassGate();
+  let d1, d2;
+  try {
+    d1 = await fetchJSON(url1, 'Q1:roads+buildings');
+    d2 = await fetchJSON(url2, 'Q2:nature+land');
+  } finally {
+    overpassRelease();
   }
+
+  const buildings: OverpassElement[] = [];
+  const roads: OverpassElement[] = [];
+  const trees: Array<{lat:number,lon:number}> = [];
+  let highwayCount = 0;
+
+  const allElements: any[] = [];
+  if (d1) allElements.push(...(d1.elements || []));
+  if (d2) allElements.push(...(d2.elements || []));
+
+  for (const e of allElements) {
+    if (!e.tags) continue;
+    if (e.type === 'node' && e.tags.natural === 'tree' && e.lat && e.lon) {
+      trees.push({ lat: e.lat, lon: e.lon });
+      continue;
+    }
+    if (!e.geometry || e.geometry.length < 2) continue;
+    if (e.tags.building) {
+      buildings.push(e);
+    } else {
+      if (e.tags.highway) highwayCount++;
+      roads.push(e);
+    }
+  }
+
+  const primaryQuerySucceeded = d1 !== null;
+  const result: OverpassResult = { buildings, roads, trees, highwayCount, primaryQuerySucceeded };
+
+  // Only cache if the primary query succeeded (don't poison cache with failed fetches)
+  if (primaryQuerySucceeded && (buildings.length > 0 || highwayCount > 0)) {
+    try { writeFileSync(cachePath, JSON.stringify(result)); } catch {}
+  }
+
+  console.log(`  Overpass: ${buildings.length} buildings, ${highwayCount} highways, primary=${primaryQuerySucceeded ? 'OK' : 'FAILED'}`);
+  return result;
 }
 
 /** Convert lat/lng geometry to tile pixel coordinates */
@@ -524,17 +589,26 @@ const HIGHWAY_WIDTHS: Record<string, number> = {
 
 /** Fetch a single Esri satellite tile and return its RGBA pixels */
 async function fetchSatelliteTilePixels(z: number, x: number, y: number): Promise<{ data: Uint8ClampedArray; width: number; height: number } | null> {
-  try {
-    const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    const img = await loadImage(buf);
-    const canvas = createCanvas(img.width, img.height);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    return ctx.getImageData(0, 0, img.width, img.height);
-  } catch { return null; }
+  const url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        if (attempt < 2) { await new Promise(r => setTimeout(r, 1000)); continue; }
+        return null;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      const img = await loadImage(buf);
+      const canvas = createCanvas(img.width, img.height);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      return ctx.getImageData(0, 0, img.width, img.height);
+    } catch {
+      if (attempt < 2) { await new Promise(r => setTimeout(r, 1000)); continue; }
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -634,35 +708,40 @@ async function renderParentTile(sz: number, sx: number, sy: number): Promise<Ren
 
   let [vt, elevTile, overpass, satTile] = await fetchAllSources();
 
-  // Check completeness — actual highway roads are critical (not just any non-building element)
-  let hasOverpassRoads = (overpass.highwayCount ?? overpass.roads.length) > 0;
+  // Check completeness — all critical data sources must succeed
+  let hasOverpassData = overpass.primaryQuerySucceeded;
   let hasElevation = elevTile !== null;
+  let hasSatellite = satTile !== null;
 
   // Retry once if missing critical data
-  if (!hasOverpassRoads || !hasElevation) {
+  if (!hasOverpassData || !hasElevation || !hasSatellite) {
     const missing = [];
-    if (!hasOverpassRoads) missing.push(`overpass highways (got ${overpass.roads.length} non-building elements but 0 highways)`);
+    if (!hasOverpassData) missing.push('overpass');
     if (!hasElevation) missing.push('elevation');
+    if (!hasSatellite) missing.push('satellite');
     console.log(`  Incomplete data (missing: ${missing.join(', ')}), retrying in 3s...`);
     await new Promise(r => setTimeout(r, 3000));
-    // Only re-fetch what's missing
-    if (!hasOverpassRoads) {
+    if (!hasOverpassData) {
       overpass = await fetchOverpass(bbox.south, bbox.west, bbox.north, bbox.east);
-      hasOverpassRoads = (overpass.highwayCount ?? overpass.roads.length) > 0;
+      hasOverpassData = overpass.primaryQuerySucceeded;
     }
     if (!hasElevation) {
       elevTile = await fetchOneElevationTile(sz, sx, sy);
       hasElevation = elevTile !== null;
     }
+    if (!hasSatellite) {
+      satTile = await fetchSatelliteTilePixels(sz, sx, sy);
+      hasSatellite = satTile !== null;
+    }
   }
 
-  // Still no Overpass roads after retry — refuse to render
-  if (!hasOverpassRoads) {
-    console.log(`  SKIPPED: No Overpass highway data after retry — returning 503`);
+  // No Overpass data after retry — refuse to render incomplete tile
+  if (!hasOverpassData) {
+    console.log(`  SKIPPED: Overpass primary query failed after retry — returning 503`);
     return null;
   }
 
-  const complete = hasOverpassRoads && hasElevation;
+  const complete = hasOverpassData && hasElevation && hasSatellite;
 
   console.log(`  Overpass: ${overpass.buildings.length} buildings, ${overpass.roads.length} roads`);
 
@@ -951,60 +1030,92 @@ async function renderParentTile(sz: number, sx: number, sy: number): Promise<Ren
   return { buffer: result, complete };
 }
 
-// In-flight parent renders to avoid duplicate work
-const parentInFlight = new Map<string, Promise<Buffer>>();
+// ============================================
+// Parent render queue — paced to avoid Overpass rate limits
+// ============================================
+const RENDER_MAX_CONCURRENT = 3; // max parent tiles rendering at once
+let renderActive = 0;
+
+interface RenderJob {
+  key: string;
+  parentZ: number;
+  parentX: number;
+  parentY: number;
+  resolve: () => void;
+  reject: (err: Error) => void;
+}
+
+const renderQueue: RenderJob[] = [];
+const renderInFlight = new Map<string, Promise<void>>(); // dedup
+
+function drainRenderQueue() {
+  while (renderActive < RENDER_MAX_CONCURRENT && renderQueue.length > 0) {
+    const job = renderQueue.shift()!;
+    renderActive++;
+    executeRenderJob(job)
+      .then(() => job.resolve())
+      .catch((err) => job.reject(err))
+      .finally(() => {
+        renderActive--;
+        drainRenderQueue(); // process next in queue
+      });
+  }
+}
+
+async function executeRenderJob(job: RenderJob): Promise<void> {
+  const start = Date.now();
+  const renderResult = await renderParentTile(job.parentZ, job.parentX, job.parentY);
+  if (!renderResult) return; // Overpass failed — tiles stay ungenerated
+  const { buffer: parentPNG, complete } = renderResult;
+  const parentImg = await loadImage(parentPNG);
+  const parentW = parentImg.width;
+
+  const factor = 4;
+  const subSize = parentW / factor;
+
+  for (let sy = 0; sy < factor; sy++) {
+    for (let sx = 0; sx < factor; sx++) {
+      const tileX = job.parentX * factor + sx;
+      const tileY = job.parentY * factor + sy;
+      const key = `16_${tileX}_${tileY}`;
+      const diskPath = join(CACHE_DIR, `${key}.png`);
+
+      const canvas = createCanvas(256, 256);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(parentImg, sx * subSize, sy * subSize, subSize, subSize, 0, 0, 256, 256);
+      const buf = canvas.toBuffer('image/png');
+
+      if (complete) {
+        writeFileSync(diskPath, buf);
+        memCacheSet(key, buf);
+      }
+    }
+  }
+
+  const qLen = renderQueue.length;
+  console.log(`  Parent ${job.parentZ}/${job.parentX}/${job.parentY} -> 16 tiles in ${Date.now() - start}ms${complete ? '' : ' (INCOMPLETE)'}${qLen > 0 ? ` [${qLen} queued, ${renderActive} active]` : ''}`);
+}
 
 /**
- * Render a z14 parent and pre-slice ALL 16 z16 sub-tiles into cache.
- * This way, when you pan, adjacent tiles are already ready.
+ * Queue a z14 parent render. Deduplicates concurrent requests for the same parent.
+ * Max RENDER_MAX_CONCURRENT parents render at once — the rest wait in queue.
  */
 async function renderAndCacheParent(parentZ: number, parentX: number, parentY: number): Promise<void> {
   const parentKey = `p_${parentZ}_${parentX}_${parentY}`;
 
-  // Already rendering this parent? Wait for it.
-  if (parentInFlight.has(parentKey)) {
-    await parentInFlight.get(parentKey);
-    return;
+  // Already rendering or queued? Wait for it.
+  if (renderInFlight.has(parentKey)) {
+    return renderInFlight.get(parentKey)!;
   }
 
-  const promise = (async () => {
-    const start = Date.now();
-    const renderResult = await renderParentTile(parentZ, parentX, parentY);
-    if (!renderResult) return; // Incomplete data — don't generate tiles
-    const { buffer: parentPNG, complete } = renderResult;
-    const parentImg = await loadImage(parentPNG);
-    const parentW = parentImg.width;
+  const promise = new Promise<void>((resolve, reject) => {
+    renderQueue.push({ key: parentKey, parentZ, parentX, parentY, resolve, reject });
+    drainRenderQueue();
+  });
 
-    // Slice into z16 tiles (4x4 = 16 tiles)
-    const factor = 4; // z16 - z14 = 2, 2^2 = 4
-    const subSize = parentW / factor;
-
-    for (let sy = 0; sy < factor; sy++) {
-      for (let sx = 0; sx < factor; sx++) {
-        const tileX = parentX * factor + sx;
-        const tileY = parentY * factor + sy;
-        const key = `16_${tileX}_${tileY}`;
-        const diskPath = join(CACHE_DIR, `${key}.png`);
-
-        const canvas = createCanvas(256, 256);
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(parentImg, sx * subSize, sy * subSize, subSize, subSize, 0, 0, 256, 256);
-        const buf = canvas.toBuffer('image/png');
-
-        // Only persist to disk if tile has complete data
-        if (complete) {
-          writeFileSync(diskPath, buf);
-        }
-        memCacheSet(key, buf);
-      }
-    }
-
-    console.log(`  Parent ${parentZ}/${parentX}/${parentY} -> 16 tiles in ${Date.now() - start}ms${complete ? '' : ' (INCOMPLETE - not cached)'}`);
-  })();
-
-  parentInFlight.set(parentKey, promise);
-  try { await promise; } finally { parentInFlight.delete(parentKey); }
+  renderInFlight.set(parentKey, promise);
+  try { await promise; } finally { renderInFlight.delete(parentKey); }
 }
 
 // ============================================
@@ -1027,8 +1138,8 @@ app.get('/tiles/:z/:x/:y.png', async (req, res) => {
   const x = parseInt(req.params.x);
   const y = parseInt(req.params.y);
 
-  if (isNaN(z) || isNaN(x) || isNaN(y) || z < 0 || z > 16) {
-    return res.status(400).send('');
+  if (isNaN(z) || isNaN(x) || isNaN(y) || z !== 16) {
+    return res.status(400).send('Only z16 tiles are supported');
   }
 
   const key = `${z}_${x}_${y}`;
@@ -1057,7 +1168,7 @@ app.get('/tiles/:z/:x/:y.png', async (req, res) => {
       const parentY = Math.floor(y / 4);
       await renderAndCacheParent(14, parentX, parentY);
 
-      // Now it should be cached (if render succeeded)
+      // Serve from disk (complete) or memory (incomplete fallback)
       if (existsSync(diskPath)) {
         const buf = readFileSync(diskPath);
         memCacheSet(key, buf);
@@ -1065,13 +1176,12 @@ app.get('/tiles/:z/:x/:y.png', async (req, res) => {
         res.set('Cache-Control', 'no-cache, no-store');
         return res.send(buf);
       }
-      // If not on disk, render was incomplete — return 503 so browser retries
       if (memCache.has(key)) {
         res.set('Content-Type', 'image/png');
         res.set('Cache-Control', 'no-cache, no-store');
         return res.send(memCache.get(key));
       }
-      return res.status(503).set('Retry-After', '5').send('');
+      return res.status(503).set('Retry-After', '10').send('');
     }
 
     // Fallback: render directly for z14 or below
@@ -1083,8 +1193,10 @@ app.get('/tiles/:z/:x/:y.png', async (req, res) => {
     const { buffer: png, complete } = result;
     console.log(`  ${z}/${x}/${y} rendered in ${Date.now() - start}ms${complete ? '' : ' (INCOMPLETE)'}`);
 
-    if (complete) writeFileSync(diskPath, png);
-    memCacheSet(key, png);
+    if (complete) {
+      writeFileSync(diskPath, png);
+      memCacheSet(key, png);
+    }
     res.set('Content-Type', 'image/png');
     res.set('Cache-Control', 'no-cache, no-store');
     res.send(png);
