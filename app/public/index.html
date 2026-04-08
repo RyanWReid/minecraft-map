@@ -1006,12 +1006,43 @@
     .fp-action.deny { background: #c94040; color: #fff; border-color: #8b2020; }
     .fp-msg { font-size: 10px; color: #666; padding: 4px 0; text-align: center; }
 
+    /* ===== JOURNAL PANEL ===== */
+    #journal-panel {
+      display: none; position: absolute; top: 50%; right: 80px; transform: translateY(-50%);
+      z-index: 1500; width: 320px; max-height: 70vh; overflow-y: auto;
+      background: var(--panel-bg); border: 3px solid var(--panel-border);
+      box-shadow: inset 2px 2px 0 var(--panel-hi), inset -2px -2px 0 var(--slot-bg),
+                  2px 4px 0 rgba(0,0,0,0.4);
+      font-family: 'Minecraft', monospace;
+    }
+    #journal-panel.open { display: block; }
+    .jp-title { font-size: 11px; color: #3f3f3f; padding: 6px 8px 4px; text-align: center; text-shadow: 1px 1px 0 rgba(255,255,255,0.3); }
+    .jp-progress { font-size: 9px; color: #666; text-align: center; padding: 0 8px 6px; }
+    .jp-progress-bar { height: 6px; background: var(--slot-bg); box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br); margin: 4px 8px 0; overflow: hidden; }
+    .jp-progress-fill { height: 100%; background: #5cb85c; transition: width 0.3s ease; }
+    .jp-body { padding: 4px 8px 8px; }
+    .jp-entry {
+      display: flex; align-items: center; gap: 8px; padding: 6px;
+      background: var(--slot-bg);
+      box-shadow: inset 2px 2px 0 var(--slot-tl), inset -2px -2px 0 var(--slot-br);
+      margin-bottom: 3px;
+    }
+    .jp-entry.locked { opacity: 0.4; }
+    .jp-entry-icon { width: 24px; height: 24px; image-rendering: pixelated; flex-shrink: 0; }
+    .jp-entry-text { flex: 1; }
+    .jp-entry-name { font-size: 11px; color: #fff; text-shadow: 1px 1px 0 #000; }
+    .jp-entry.locked .jp-entry-name { color: #999; }
+    .jp-entry-desc { font-size: 9px; color: #aaa; margin-top: 1px; }
+    .jp-entry.locked .jp-entry-desc { color: #666; }
+    .jp-entry-date { font-size: 8px; color: #55ff55; text-shadow: 1px 1px 0 #000; }
+    .jp-entry.locked .jp-entry-date { display: none; }
+
     /* ===== CHAT (MC PE style) ===== */
     /* Old chat panel removed — now using MC Java-style floating chat */
 
     /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 768px) {
-      :root { --ft: 16px; --fc: 24px; }
+      :root { --ft: 20px; --fc: 28px; }
 
       /* Use dynamic viewport height for Safari address bar */
       #map { height: 100dvh; }
@@ -1029,8 +1060,8 @@
       .ac-item { font-size: 14px; padding: 12px 10px; }
       .ac-item .ac-sub { font-size: 11px; }
 
-      /* Social buttons — 44px Apple HIG minimum, clears frame */
-      #social-btns { right: 22px; gap: 8px; }
+      /* Social buttons — 44px Apple HIG minimum, clears frame, moved to top to avoid toolbar overlap */
+      #social-btns { right: 22px; gap: 8px; top: 80px; transform: none; }
       .social-btn { width: 44px; height: 44px; font-size: 18px; }
       .social-btn svg { width: 22px; height: 22px; }
       .social-btn::after { display: none; }
@@ -1051,9 +1082,15 @@
       /* Coords — readable, centered, clears bottom frame */
       #coords { bottom: 20px; font-size: 11px; padding: 4px 12px; max-width: 70vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-      /* Friends panel — full-width bottom sheet, clears frame */
-      #friends-panel { top: auto; bottom: 60px; left: 22px; right: 22px; width: auto; }
-      .fp-title { font-size: 13px; padding: 10px 12px 6px; }
+      /* Friends & Journal panels — full-width bottom sheet, clears frame */
+      #friends-panel, #journal-panel { top: auto; bottom: 60px; left: 22px; right: 22px; width: auto; transform: none; }
+      .fp-title, .jp-title { font-size: 13px; padding: 10px 12px 6px; }
+      .jp-progress { font-size: 11px; }
+      .jp-entry { padding: 8px; gap: 10px; }
+      .jp-entry-icon { width: 28px; height: 28px; }
+      .jp-entry-name { font-size: 13px; }
+      .jp-entry-desc { font-size: 11px; }
+      .jp-entry-date { font-size: 10px; }
       .fp-body { padding: 8px 12px 12px; }
       .fp-code { font-size: 12px; padding: 10px 12px; }
       .fp-code span { font-size: 16px; }
@@ -1141,7 +1178,7 @@
 
     /* Extra small screens (iPhone SE, etc.) */
     @media (max-width: 480px) {
-      :root { --ft: 12px; --fc: 18px; }
+      :root { --ft: 16px; --fc: 22px; }
       #controls { display: none; }
 
       /* Search — clears 12px frame */
@@ -1149,8 +1186,8 @@
       #search-input { font-size: 16px; padding: 10px 12px; }
       #nav-map-toggle { top: 16px; left: 18px; width: 40px; height: 40px; }
 
-      /* Social — clears frame */
-      #social-btns { right: 18px; gap: 6px; }
+      /* Social — clears frame, top-aligned to avoid toolbar overlap */
+      #social-btns { right: 18px; gap: 6px; top: 70px; transform: none; }
       .social-btn { width: 40px; height: 40px; font-size: 16px; }
       .social-btn svg { width: 20px; height: 20px; }
 
@@ -1181,8 +1218,8 @@
       .mc-menu-btn { font-size: 15px; padding: 11px 0 13px 0; }
       #splash-text { display: none; }
 
-      /* Friends panel — clears frame */
-      #friends-panel { left: 18px; right: 18px; bottom: 54px; }
+      /* Friends & Journal panels — clears frame */
+      #friends-panel, #journal-panel { left: 18px; right: 18px; bottom: 54px; transform: none; }
 
       /* Chat */
       #chat-box { left: 18px; right: 64px; bottom: 80px; }
@@ -1376,6 +1413,9 @@
         <rect x="5" y="7" width="4" height="1" fill="#999"/>
       </svg>
     </button>
+    <button id="journal-btn" class="social-btn" onclick="toggleJournal()" data-tip="Achievements">
+      <img src="/icons/book.png" alt="Journal" style="width:20px;height:20px;image-rendering:pixelated"/>
+    </button>
     <button id="help-btn" class="social-btn" onclick="toggleHelp()" data-tip="Help">?</button>
     <button id="friends-btn" class="social-btn" onclick="toggleFriends()" data-tip="Friends">
       <svg viewBox="0 0 16 16" width="20" height="20" style="image-rendering:pixelated">
@@ -1393,7 +1433,7 @@
 
   <!-- Map toolbar — bottom-right -->
   <div id="toolbar">
-    <button id="home-btn" class="toolbar-slot" onclick="handleHome()" data-tip="Set Spawn / Go Home">&#x1F6CF;</button>
+    <button id="home-btn" class="toolbar-slot" onclick="handleHome()" data-tip="Set Spawn / Go Home"><img src="/icons/bed.png" alt="Bed"/></button>
     <button id="poi-toggle" class="toolbar-slot" onclick="togglePOIs()" data-tip="Places">
       <img src="/icons/default.png" alt="POI"/>
     </button>
@@ -1420,6 +1460,14 @@
       <div id="fp-friends-list"></div>
       <div class="fp-msg" id="fp-status"></div>
     </div>
+  </div>
+
+  <!-- Journal / Achievements Panel -->
+  <div id="journal-panel">
+    <div class="jp-title">Achievements</div>
+    <div class="jp-progress" id="jp-progress-text">0 / 5</div>
+    <div class="jp-progress-bar"><div class="jp-progress-fill" id="jp-progress-fill" style="width:0%"></div></div>
+    <div class="jp-body" id="jp-entries"></div>
   </div>
 
   <!-- Chat — always present, .open toggles full mode -->
@@ -2793,6 +2841,63 @@
       achievementsEarned[id] = Date.now();
       localStorage.setItem('mc-achievements', JSON.stringify(achievementsEarned));
       showAchievement(title, desc, icon);
+      // Refresh journal if open
+      if (document.getElementById('journal-panel').classList.contains('open')) renderJournal();
+    }
+
+    // ---- Journal / Achievements panel ----
+    var ALL_ACHIEVEMENTS = [
+      { id: 'first_world',  name: 'Into the World',        desc: 'Enter the map for the first time',     icon: '/icons/ender_eye.png' },
+      { id: 'first_chat',   name: 'Is Anybody There?',     desc: 'Send your first chat message',         icon: '/icons/sign.png' },
+      { id: 'first_locate', name: 'Where Am I?',           desc: 'Use GPS to find your location',        icon: '/icons/compass_0.png' },
+      { id: 'set_spawn',    name: 'Sweet Dreams',          desc: 'Set your spawn point',                 icon: '/icons/bed.png' },
+      { id: 'first_portal', name: 'We Need to Go Deeper',  desc: 'Trigger a nether portal teleport',     icon: '/icons/portal.png' },
+    ];
+
+    function toggleJournal() {
+      SFX.play('click', 0.4);
+      var panel = document.getElementById('journal-panel');
+      var btn = document.getElementById('journal-btn');
+      var isOpen = panel.classList.contains('open');
+      // Close other panels
+      document.getElementById('friends-panel').classList.remove('open');
+      document.getElementById('friends-btn').classList.remove('active');
+      if (isOpen) {
+        panel.classList.remove('open');
+        btn.classList.remove('active');
+      } else {
+        panel.classList.add('open');
+        btn.classList.add('active');
+        renderJournal();
+      }
+    }
+
+    function renderJournal() {
+      var container = document.getElementById('jp-entries');
+      var earned = 0;
+      var html = '';
+      for (var i = 0; i < ALL_ACHIEVEMENTS.length; i++) {
+        var a = ALL_ACHIEVEMENTS[i];
+        var unlocked = achievementsEarned[a.id];
+        if (unlocked) earned++;
+        var cls = unlocked ? 'jp-entry' : 'jp-entry locked';
+        var dateStr = '';
+        if (unlocked) {
+          var d = new Date(unlocked);
+          dateStr = '<div class="jp-entry-date">' + d.toLocaleDateString() + '</div>';
+        }
+        html += '<div class="' + cls + '">' +
+          '<img class="jp-entry-icon" src="' + a.icon + '" alt=""/>' +
+          '<div class="jp-entry-text">' +
+            '<div class="jp-entry-name">' + a.name + '</div>' +
+            '<div class="jp-entry-desc">' + (unlocked ? a.desc : '???') + '</div>' +
+            dateStr +
+          '</div>' +
+        '</div>';
+      }
+      container.innerHTML = html;
+      document.getElementById('jp-progress-text').textContent = earned + ' / ' + ALL_ACHIEVEMENTS.length;
+      document.getElementById('jp-progress-fill').style.width = (earned / ALL_ACHIEVEMENTS.length * 100) + '%';
     }
 
     let playerMarker = null, watchId = null, heading = 0, locateActive = false;
