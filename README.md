@@ -86,6 +86,8 @@ Add friends with a 6-character friend code, see their live location on the map i
   <img src="screenshots/friends-panel.png" width="49%" alt="Friends Panel & Chat"/>
 </p>
 
+![Achievement](screenshots/achievement.png)
+
 ---
 
 ## Everything Else
