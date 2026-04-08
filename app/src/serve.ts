@@ -27,6 +27,7 @@ const PORT = 3001;
 const TILE_VERSION = 'v1';
 const CACHE_DIR = resolve('tile-cache', TILE_VERSION);
 mkdirSync(CACHE_DIR, { recursive: true });
+const STATIC_ONLY = !!process.env.STATIC_ONLY;
 
 // ============================================
 // Database setup
@@ -416,15 +417,16 @@ interface OverpassElement {
 const OVERPASS_CACHE = resolve('overpass-cache');
 mkdirSync(OVERPASS_CACHE, { recursive: true });
 
-// Rotate between multiple Overpass servers to avoid rate limits.
-// When local Overpass is running, set OVERPASS_LOCAL=1 to use localhost only.
-const OVERPASS_SERVERS = process.env.OVERPASS_LOCAL
-  ? ['http://localhost:12345/api/interpreter']
-  : [
-      'https://overpass-api.de/api/interpreter',
-      'https://overpass.kumi.systems/api/interpreter',
-      'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-    ];
+// Overpass server config — priority: OVERPASS_URL env > OVERPASS_LOCAL > public rotation
+const OVERPASS_SERVERS = process.env.OVERPASS_URL
+  ? [process.env.OVERPASS_URL]
+  : process.env.OVERPASS_LOCAL
+    ? ['http://localhost:12345/api/interpreter']
+    : [
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+      ];
 let overpassServerIdx = 0;
 
 // Global concurrency limiter for Overpass — max 2 concurrent requests to avoid 429 storms
@@ -1143,10 +1145,20 @@ app.get('/tiles/:z/:x/:y.png', async (req, res) => {
   }
 
   const key = `${z}_${x}_${y}`;
-
-  // TEMP: all caching disabled for dev — always re-render
   const diskPath = join(CACHE_DIR, `${key}.png`);
-  /*
+
+  // Static-only mode: serve cached tiles only, no rendering
+  if (STATIC_ONLY) {
+    if (existsSync(diskPath)) {
+      const buf = readFileSync(diskPath);
+      res.set('Content-Type', 'image/png');
+      res.set('Cache-Control', 'public, max-age=86400');
+      return res.send(buf);
+    }
+    return res.status(404).send('');
+  }
+
+  // Dev mode: serve from cache if available
   if (memCache.has(key)) {
     res.set('Content-Type', 'image/png');
     res.set('Cache-Control', 'no-cache, no-store');
@@ -1159,7 +1171,6 @@ app.get('/tiles/:z/:x/:y.png', async (req, res) => {
     res.set('Cache-Control', 'no-cache, no-store');
     return res.send(buf);
   }
-  */
 
   try {
     if (z === 16) {
@@ -1693,7 +1704,7 @@ function broadcastToFriends(playerId: number, msg: any) {
 
 httpServer.listen(PORT, () => {
   console.log(`\n  Minecraft Map: http://localhost:${PORT}`);
-  console.log(`  WebSocket server ready`);
-  console.log(`  First tile load ~2-3s, then cached.\n`);
+  console.log(`  Mode: ${STATIC_ONLY ? 'STATIC (cached tiles only)' : 'FULL (rendering enabled)'}`);
+  console.log(`  WebSocket server ready\n`);
 });
 

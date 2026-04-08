@@ -1,0 +1,39 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - OVERPASS_URL=http://overpass:80/api/interpreter
+    volumes:
+      - tile-cache:/app/tile-cache
+      - app-data:/app/data
+    depends_on:
+      overpass:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # SoCal OSM data for on-demand tile rendering.
+  # First start downloads + imports data (~15 min). Subsequent starts are instant.
+  # The wiktorn/overpass-api image requires .osm.bz2 format.
+  # To initialize: download the PBF, convert to bz2, then mount it.
+  # See README for initialization instructions.
+  overpass:
+    image: wiktorn/overpass-api
+    environment:
+      - OVERPASS_META=yes
+      - OVERPASS_RULES_LOAD=10
+    volumes:
+      - overpass-db:/db
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/api/interpreter?data=[out:json];node(1);out;"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 900s
+    restart: unless-stopped
+
+volumes:
+  tile-cache:
+  app-data:
+  overpass-db:

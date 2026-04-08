@@ -20,4 +20,5 @@ COPY app/ .
 
 EXPOSE 3001
 
+# Default: rendering enabled (set STATIC_ONLY=1 to disable rendering and serve cached tiles only)
 CMD ["npx", "tsx", "src/serve.ts"]

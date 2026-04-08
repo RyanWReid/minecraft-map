@@ -267,6 +267,26 @@
     }
 
     /* Coords bar — HUD overlay, bottom center */
+    /* XP bar — Minecraft-style, above coords */
+    #xp-bar {
+      position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; width: 182px; height: 5px;
+      background: #1e1e1e;
+      box-shadow: inset 1px 1px 0 #0a0a0a, inset -1px -1px 0 #333;
+    }
+    #xp-fill {
+      height: 100%; width: 0%;
+      background: #80ff20;
+      box-shadow: inset 0 -1px 0 #4ca80e;
+      transition: width 0.5s ease;
+    }
+    #xp-level {
+      position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%);
+      z-index: 1001;
+      font-family: 'Minecraft', monospace; font-size: 10px;
+      color: #80ff20;
+      text-shadow: 1px 1px 0 #1a1a1a, -1px -1px 0 #1a1a1a, 1px -1px 0 #1a1a1a, -1px 1px 0 #1a1a1a;
+    }
     #coords {
       position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
       z-index: 1000; padding: 4px 12px;
@@ -1081,6 +1101,8 @@
 
       /* Coords — readable, centered, clears bottom frame */
       #coords { bottom: 20px; font-size: 11px; padding: 4px 12px; max-width: 70vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #xp-bar { bottom: 38px; width: 160px; }
+      #xp-level { bottom: 42px; font-size: 9px; }
 
       /* Friends & Journal panels — full-width bottom sheet, clears frame */
       #friends-panel, #journal-panel { top: auto; bottom: 60px; left: 22px; right: 22px; width: auto; transform: none; }
@@ -1205,6 +1227,8 @@
 
       /* Coords — clears bottom frame */
       #coords { bottom: 16px; font-size: 10px; padding: 3px 10px; }
+      #xp-bar { bottom: 34px; width: 140px; }
+      #xp-level { bottom: 38px; font-size: 8px; }
 
       /* Nav banner */
       #nav-banner { bottom: 38px; }
@@ -1491,6 +1515,10 @@
       <div id="clock-weather"><span id="weather-icon"></span><span id="weather-text">--</span></div>
     </div>
   </div>
+
+  <!-- XP bar — above coords -->
+  <div id="xp-level">0</div>
+  <div id="xp-bar"><div id="xp-fill"></div></div>
 
   <!-- Coords — HUD overlay, bottom-center -->
   <div id="coords">X: 0, Z: 0</div>
@@ -1871,6 +1899,7 @@
       else if (mode === 'sat') { activeLayer = satLayer; document.getElementById('btn-sat').classList.add('active'); document.getElementById('map').style.imageRendering = 'auto'; currentViewIdx = 1; }
       else { activeLayer = roadsLayer; document.getElementById('btn-roads').classList.add('active'); document.getElementById('map').style.imageRendering = 'auto'; currentViewIdx = 2; }
       activeLayer.addTo(map);
+      if (mode !== 'mc') tryAchievement('first_layer', 'Achievement Made!', 'New Perspective', '/icons/ender_eye.png');
       // Update cycle button label
       var labels = { mc: 'MC', sat: 'SAT', roads: 'RD' };
       var btn = document.getElementById('layer-cycle-btn');
@@ -1984,6 +2013,7 @@
       searchInput.value = name;
       selectedPlace = { lat, lng, name, sub };
       SFX.play('orb', 0.35, 1.2);
+      tryAchievement('first_search', 'Achievement Made!', 'The Explorer', '/icons/book.png');
 
       // Fly to location
       map.setView([lat, lng], 16);
@@ -2020,6 +2050,7 @@
 
     function startDirections() {
       SFX.play('chestopen', 0.35);
+      tryAchievement('first_directions', 'Achievement Made!', 'Pathfinder', '/icons/map_item.png');
       document.getElementById('place-card').classList.remove('open');
       document.getElementById('dir-panel').classList.add('open');
 
@@ -2412,7 +2443,7 @@
         body: JSON.stringify({ code: code }),
       }).then(function(r) { return r.json(); }).then(function(data) {
         if (data.error) { document.getElementById('fp-status').textContent = data.error; }
-        else { document.getElementById('fp-status').textContent = 'Request sent to ' + data.friendName + '!'; SFX.play('orb', 0.3); input.value = ''; refreshFriends(); }
+        else { document.getElementById('fp-status').textContent = 'Request sent to ' + data.friendName + '!'; SFX.play('orb', 0.3); input.value = ''; refreshFriends(); tryAchievement('first_friend', 'Achievement Made!', 'Multiplayer!', '/icons/default.png'); }
         setTimeout(function() { document.getElementById('fp-status').textContent = ''; }, 3000);
       });
     }
@@ -2647,6 +2678,7 @@
       navStepIdx = 0;
       btn.textContent = 'Stop Navigation';
       btn.classList.add('navigating');
+      tryAchievement('first_navigate', 'Achievement Made!', 'On My Way', '/icons/compass_0.png');
       document.getElementById('dir-close').textContent = 'Minimize';
       document.getElementById('nav-banner').classList.add('open');
       // Collapse dir-panel, show map item icon
@@ -2833,6 +2865,53 @@
       setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 5200);
     }
 
+    // ---- XP & Level System ----
+    // 1 meter GPS travel = 1 block. Achievements grant bonus XP.
+    // XP needed per level = 7 * level (like early MC levels)
+    var xpState = { totalBlocks: 0, xp: 0, level: 0 };
+    try { xpState = JSON.parse(localStorage.getItem('mc-xp') || '{}'); xpState.totalBlocks = xpState.totalBlocks || 0; xpState.xp = xpState.xp || 0; xpState.level = xpState.level || 0; } catch {}
+    var lastXpLat = null, lastXpLng = null;
+
+    function xpForLevel(lvl) { return 7 + (lvl * 3); }
+
+    function addXP(amount) {
+      xpState.xp += amount;
+      var needed = xpForLevel(xpState.level);
+      while (xpState.xp >= needed) {
+        xpState.xp -= needed;
+        xpState.level++;
+        needed = xpForLevel(xpState.level);
+        SFX.play('levelup', 0.5);
+      }
+      updateXPBar();
+      localStorage.setItem('mc-xp', JSON.stringify(xpState));
+    }
+
+    function updateXPBar() {
+      var needed = xpForLevel(xpState.level);
+      var pct = Math.min(100, (xpState.xp / needed) * 100);
+      document.getElementById('xp-fill').style.width = pct + '%';
+      document.getElementById('xp-level').textContent = xpState.level;
+    }
+
+    function trackGPSDistance(lat, lng) {
+      if (lastXpLat !== null && lastXpLng !== null) {
+        var dist = haversine(lastXpLat, lastXpLng, lat, lng);
+        if (dist > 1 && dist < 500) { // ignore GPS jitter (< 1m) and teleports (> 500m)
+          var blocks = Math.floor(dist);
+          xpState.totalBlocks += blocks;
+          addXP(blocks);
+          // Distance achievements
+          if (xpState.totalBlocks >= 100) tryAchievement('walk_100', 'Achievement Made!', 'First Steps', '/icons/dirt.png');
+          if (xpState.totalBlocks >= 1000) tryAchievement('walk_1k', 'Achievement Made!', 'Adventurer', '/icons/compass_0.png');
+          if (xpState.totalBlocks >= 10000) tryAchievement('walk_10k', 'Achievement Made!', 'Veteran Explorer', '/icons/map_item.png');
+          if (xpState.totalBlocks >= 100000) tryAchievement('walk_100k', 'Achievement Made!', 'Around the Block', '/icons/ender_eye.png');
+        }
+      }
+      lastXpLat = lat;
+      lastXpLng = lng;
+    }
+
     // Built-in achievements triggered by actions
     var achievementsEarned = {};
     try { achievementsEarned = JSON.parse(localStorage.getItem('mc-achievements') || '{}'); } catch {}
@@ -2841,6 +2920,7 @@
       achievementsEarned[id] = Date.now();
       localStorage.setItem('mc-achievements', JSON.stringify(achievementsEarned));
       showAchievement(title, desc, icon);
+      addXP(50); // each achievement grants 50 XP
       // Refresh journal if open
       if (document.getElementById('journal-panel').classList.contains('open')) renderJournal();
     }
@@ -2848,10 +2928,21 @@
     // ---- Journal / Achievements panel ----
     var ALL_ACHIEVEMENTS = [
       { id: 'first_world',  name: 'Into the World',        desc: 'Enter the map for the first time',     icon: '/icons/ender_eye.png' },
-      { id: 'first_chat',   name: 'Is Anybody There?',     desc: 'Send your first chat message',         icon: '/icons/sign.png' },
+      { id: 'first_search', name: 'The Explorer',          desc: 'Search for a place',                   icon: '/icons/book.png' },
+      { id: 'first_directions', name: 'Pathfinder',        desc: 'Get directions to somewhere',           icon: '/icons/map_item.png' },
+      { id: 'first_navigate', name: 'On My Way',           desc: 'Start turn-by-turn navigation',        icon: '/icons/compass_0.png' },
       { id: 'first_locate', name: 'Where Am I?',           desc: 'Use GPS to find your location',        icon: '/icons/compass_0.png' },
+      { id: 'first_chat',   name: 'Is Anybody There?',     desc: 'Send your first chat message',         icon: '/icons/sign.png' },
+      { id: 'first_friend', name: 'Multiplayer!',          desc: 'Add your first friend',                icon: '/icons/default.png' },
       { id: 'set_spawn',    name: 'Sweet Dreams',          desc: 'Set your spawn point',                 icon: '/icons/bed.png' },
       { id: 'first_portal', name: 'We Need to Go Deeper',  desc: 'Trigger a nether portal teleport',     icon: '/icons/portal.png' },
+      { id: 'first_layer',  name: 'New Perspective',       desc: 'Switch to a different map layer',      icon: '/icons/ender_eye.png' },
+      { id: 'night_owl',    name: 'Night Owl',             desc: 'Enable real-time lighting at night',   icon: '/icons/ender_eye.png' },
+      { id: 'first_music',  name: 'Where Are We Now',      desc: 'Play a music track',                   icon: '/icons/default.png' },
+      { id: 'walk_100',     name: 'First Steps',           desc: 'Travel 100 blocks',                    icon: '/icons/dirt.png' },
+      { id: 'walk_1k',      name: 'Adventurer',            desc: 'Travel 1,000 blocks',                  icon: '/icons/compass_0.png' },
+      { id: 'walk_10k',     name: 'Veteran Explorer',      desc: 'Travel 10,000 blocks',                 icon: '/icons/map_item.png' },
+      { id: 'walk_100k',    name: 'Around the Block',      desc: 'Travel 100,000 blocks',                icon: '/icons/ender_eye.png' },
     ];
 
     function toggleJournal() {
@@ -2896,7 +2987,7 @@
         '</div>';
       }
       container.innerHTML = html;
-      document.getElementById('jp-progress-text').textContent = earned + ' / ' + ALL_ACHIEVEMENTS.length;
+      document.getElementById('jp-progress-text').textContent = earned + ' / ' + ALL_ACHIEVEMENTS.length + '  |  Level ' + xpState.level + '  |  ' + xpState.totalBlocks.toLocaleString() + ' blocks';
       document.getElementById('jp-progress-fill').style.width = (earned / ALL_ACHIEVEMENTS.length * 100) + '%';
     }
 
@@ -2932,6 +3023,7 @@
         pos => {
           const lat = pos.coords.latitude, lng = pos.coords.longitude;
           if (pos.coords.heading && pos.coords.heading > 0) heading = pos.coords.heading;
+          trackGPSDistance(lat, lng);
           if (!playerMarker) {
             playerMarker = L.marker([lat, lng], { icon: playerIcon, zIndexOffset: 9999 }).addTo(map);
             const dist = haversine(map.getCenter().lat, map.getCenter().lng, lat, lng);
@@ -3136,13 +3228,17 @@
       // --- Settings actions ---
       if (key === 'night') {
         const overlay = document.getElementById('night-overlay');
-        if (settings.night) { overlay.classList.add('on'); updateClock(); }
+        if (settings.night) {
+          overlay.classList.add('on'); updateClock();
+          var h = new Date().getHours();
+          if (h >= 20 || h < 6) tryAchievement('night_owl', 'Achievement Made!', 'Night Owl', '/icons/ender_eye.png');
+        }
         else { overlay.classList.remove('on'); overlay.style.background = ''; }
       }
       if (key === 'frame') document.querySelector('.map-frame').style.display = settings.frame ? '' : 'none';
       if (key === 'pois' && settings.pois !== poisActive) togglePOIs();
       if (key === 'ambient') { if (settings.ambient) startAmbient(); else stopAmbient(); }
-      if (key === 'music') { if (settings.music) startMusic(); else stopMusic(); updateMusicUI(); }
+      if (key === 'music') { if (settings.music) { startMusic(); tryAchievement('first_music', 'Achievement Made!', 'Where Are We Now', '/icons/default.png'); } else stopMusic(); updateMusicUI(); }
       if (key === 'coords') document.getElementById('coords').style.display = settings.coords ? '' : 'none';
       if (key === 'weather') {
         document.getElementById('clock-hud').style.display = settings.weather ? '' : 'none';
@@ -3302,8 +3398,11 @@
     function resetAchievements() {
       achievementsEarned = {};
       localStorage.removeItem('mc-achievements');
+      xpState = { totalBlocks: 0, xp: 0, level: 0 };
+      localStorage.removeItem('mc-xp');
+      updateXPBar();
       SFX.play('levelup', 0.3);
-      showAchievement('Reset Complete', 'All achievements cleared', '/icons/dirt.png');
+      showAchievement('Reset Complete', 'All achievements & XP cleared', '/icons/dirt.png');
     }
 
     function deleteAccount() {
@@ -3312,6 +3411,7 @@
         if (r.ok) {
           localStorage.removeItem('mc-player');
           localStorage.removeItem('mc-achievements');
+          localStorage.removeItem('mc-xp');
           localStorage.removeItem('mc-home');
           localStorage.removeItem('mc-map-settings');
           localStorage.removeItem('mc-last-location');
@@ -4115,6 +4215,7 @@
     // Initialize clock + weather
     updateClock();
     setInterval(updateClock, 30000); // update clock every 30s
+    updateXPBar(); // initialize XP bar on load
     fetchWeather();
     setInterval(fetchWeather, 300000); // refresh weather every 5 min
     map.on('moveend', () => { clearTimeout(window._weatherDebounce); window._weatherDebounce = setTimeout(fetchWeather, 5000); });

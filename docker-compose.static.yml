@@ -1,0 +1,12 @@
+# Static-only mode: no Overpass, no rendering — just serves cached tiles.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.static.yml up -d
+services:
+  app:
+    environment:
+      - STATIC_ONLY=1
+      - OVERPASS_URL=
+    depends_on: []
+
+  overpass:
+    deploy:
+      replicas: 0
