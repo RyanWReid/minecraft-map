@@ -2486,6 +2486,7 @@
         if (data.code !== 'Ok' || !data.routes.length) { showMcError('No route found', 'Could not find a path between these locations.'); info.style.display = 'none'; return; }
         const route = data.routes[0];
         const coords_ll = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        navRouteCoords = coords_ll;
         // Dark border for depth
         routeLine = L.layerGroup([
           L.polyline(coords_ll, { color: '#661111', weight: 10, opacity: 0.9, lineCap: 'square', lineJoin: 'miter' }),
@@ -2568,6 +2569,23 @@
     let navActive = false;
     let navWatchId = null;
     let navStepIdx = 0;
+    let navRouteCoords = []; // full route [lat, lng] for line trimming
+
+    function trimRouteLine(lat, lng) {
+      if (!routeLine || navRouteCoords.length < 2) return;
+      // Find the closest point on the route to the user
+      let minDist = Infinity, minIdx = 0;
+      for (let i = 0; i < navRouteCoords.length; i++) {
+        const d = haversine(lat, lng, navRouteCoords[i][0], navRouteCoords[i][1]);
+        if (d < minDist) { minDist = d; minIdx = i; }
+      }
+      // Build trimmed route: user position + remaining route ahead
+      const remaining = [[lat, lng]].concat(navRouteCoords.slice(minIdx));
+      // Update both polylines in the layer group
+      routeLine.eachLayer(function(layer) {
+        layer.setLatLngs(remaining);
+      });
+    }
 
     function toggleNavigation() {
       const btn = document.getElementById('nav-start-btn');
@@ -2621,6 +2639,7 @@
           updateNavBanner();
           updateNavCompass();
           highlightCurrentStep();
+          trimRouteLine(lat, lng);
 
           // Center map on user
           map.setView([lat, lng], map.getZoom(), { animate: true });
@@ -2645,6 +2664,7 @@
     function stopNavigation() {
       navActive = false;
       navUserLat = null; navUserLng = null;
+      navRouteCoords = [];
       if (navWatchId !== null) { navigator.geolocation.clearWatch(navWatchId); navWatchId = null; }
       document.getElementById('nav-banner').classList.remove('open');
       document.getElementById('nav-compass').src = '/icons/compass_0.png';
@@ -2776,12 +2796,23 @@
     }
 
     let playerMarker = null, watchId = null, heading = 0, locateActive = false;
+    let followMode = false; // true = map follows user like Google Maps
+
+    // Break follow mode when user manually drags the map
+    map.on('dragstart', function() { if (followMode) followMode = false; });
 
     function toggleLocate() {
       SFX.play('click', 0.4);
       const btn = document.getElementById('locate-btn');
       if (locateActive) {
-        locateActive = false; btn.classList.remove('active');
+        // If already tracking but not following, re-enable follow mode
+        if (!followMode && playerMarker) {
+          followMode = true;
+          map.setView(playerMarker.getLatLng(), map.getZoom());
+          return;
+        }
+        // Otherwise turn off tracking entirely
+        locateActive = false; followMode = false; btn.classList.remove('active');
         if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
         if (playerMarker) { map.removeLayer(playerMarker); playerMarker = null; }
         window.removeEventListener('deviceorientation', onOrientation);
@@ -2789,7 +2820,7 @@
         return;
       }
       if (!navigator.geolocation) { alert('Geolocation is not supported. Make sure you are using HTTPS.'); return; }
-      locateActive = true; btn.classList.add('active');
+      locateActive = true; followMode = true; btn.classList.add('active');
       tryAchievement('first_locate', 'Achievement Made!', 'Where Am I?');
       const playerIcon = L.icon({ iconUrl: makePlayerIcon(), iconSize: [21, 24], iconAnchor: [10, 12], className: 'player-marker' });
       watchId = navigator.geolocation.watchPosition(
@@ -2801,11 +2832,13 @@
             const dist = haversine(map.getCenter().lat, map.getCenter().lng, lat, lng);
             if (dist > 5000) { portalTo(lat, lng); }
             else { map.setView([lat, lng], 16); }
+          } else {
+            playerMarker.setLatLng([lat, lng]);
+            if (followMode) map.panTo([lat, lng]);
           }
-          else playerMarker.setLatLng([lat, lng]);
           updateMarkerRotation();
         },
-        err => { locateActive = false; btn.classList.remove('active'); if (err.code === 1) alert('Location permission denied. Please allow location access in your browser settings.'); },
+        err => { locateActive = false; followMode = false; btn.classList.remove('active'); if (err.code === 1) alert('Location permission denied. Please allow location access in your browser settings.'); },
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
       );
       requestDeviceOrientation();
