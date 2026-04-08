@@ -5,6 +5,7 @@ app/tile-cache/
 app/overpass-cache/
 *.png
 !app/public/**/*.png
+!screenshots/**/*.png
 *.db
 *.db-wal
 *.db-shm
