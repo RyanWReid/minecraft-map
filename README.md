@@ -102,6 +102,18 @@ Weather cheats let you force rain, snow, thunder, or clear skies -- complete wit
 
 ---
 
+## Mobile Optimized
+
+Fully responsive design built for touch. 44px touch targets, Safari-safe viewport handling, and thumb-friendly controls -- the full map experience on your phone.
+
+<p align="center">
+  <img src="screenshots/mobile-map.png" width="32%" alt="Mobile Map View"/>
+  <img src="screenshots/mobile-search.png" width="32%" alt="Mobile Search"/>
+  <img src="screenshots/mobile-navigation.png" width="32%" alt="Mobile Navigation"/>
+</p>
+
+---
+
 ## Data Sources
 
 | Source | Provides |

@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Minecraft Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,9 +12,10 @@
       src: url('/fonts/minecraft.woff2') format('woff2');
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Minecraft', monospace; background: #1a1a1a; }
+    body { font-family: 'Minecraft', monospace; background: #1a1a1a; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+    button, a, input, .toolbar-slot, .social-btn, .ctrl-btn, .mc-btn, .mc-menu-btn { touch-action: manipulation; }
     #map {
-      width: 100vw; height: 100vh;
+      width: 100vw; height: 100vh; height: 100dvh;
       background: url('/icons/dirt.png') repeat;
       background-size: 64px 64px;
       image-rendering: pixelated;
@@ -1010,110 +1011,181 @@
 
     /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 768px) {
-      :root { --ft: 12px; --fc: 18px; }
+      :root { --ft: 16px; --fc: 24px; }
 
-      /* Frame safety zone: --ft (12px) + 4px gap = 16px from each edge */
-      /* Hide desktop layer toggle — use cycle button in social-btns instead */
+      /* Use dynamic viewport height for Safari address bar */
+      #map { height: 100dvh; }
+
+      /* Safe area insets for notch/home bar */
+      .map-frame { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+      /* Hide desktop layer toggle */
       #controls { display: none; }
 
-      /* Search panel — inside frame */
-      #search-panel { top: 16px; left: 18px; right: 18px; width: auto; }
-      #nav-map-toggle { top: 16px; left: 18px; width: 34px; height: 34px; }
-      #search-input { font-size: 13px; padding: 8px 10px; }
-      .ac-item { font-size: 11px; padding: 8px; }
-      .ac-item .ac-sub { font-size: 9px; }
+      /* Search panel — thumb-friendly sizing, clears 16px frame */
+      #search-panel { top: 22px; left: 22px; right: 22px; width: auto; }
+      #nav-map-toggle { top: 22px; left: 22px; width: 44px; height: 44px; }
+      #search-input { font-size: 16px; padding: 12px 14px; }
+      .ac-item { font-size: 14px; padding: 12px 10px; }
+      .ac-item .ac-sub { font-size: 11px; }
 
-      /* Social buttons — inside frame */
-      #social-btns { right: 18px; }
-      .social-btn { width: 34px; height: 34px; font-size: 14px; }
-      .social-btn svg { width: 16px; height: 16px; }
+      /* Social buttons — 44px Apple HIG minimum, clears frame */
+      #social-btns { right: 22px; gap: 8px; }
+      .social-btn { width: 44px; height: 44px; font-size: 18px; }
+      .social-btn svg { width: 22px; height: 22px; }
       .social-btn::after { display: none; }
 
-      /* Toolbar — inside frame */
-      #toolbar { right: 18px; bottom: 50px; padding: 2px; }
-      .toolbar-slot { width: 34px; height: 34px; font-size: 16px; }
-      .toolbar-slot svg { width: 16px; height: 16px; }
+      /* Toolbar — 44px touch targets, clears frame */
+      #toolbar { right: 22px; bottom: 50px; padding: 3px; gap: 3px; }
+      .toolbar-slot { width: 44px; height: 44px; font-size: 20px; }
+      .toolbar-slot svg { width: 22px; height: 22px; }
+      .toolbar-slot img { width: 24px; height: 24px; }
       .toolbar-slot::after { display: none; }
 
-      /* Clock — inside frame */
-      #clock-hud { bottom: 36px; left: 18px; gap: 6px; }
-      #mc-clock { width: 30px; height: 30px; }
-      #clock-time { font-size: 10px; }
-      #clock-weather { font-size: 7px; }
+      /* Clock — readable size, clears frame */
+      #clock-hud { bottom: 40px; left: 22px; gap: 8px; }
+      #mc-clock { width: 40px; height: 40px; }
+      #clock-time { font-size: 14px; }
+      #clock-weather { font-size: 10px; }
 
-      /* Coords — inside frame, centered */
-      #coords { bottom: 16px; font-size: 8px; padding: 2px 8px; max-width: 65vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* Coords — readable, centered, clears bottom frame */
+      #coords { bottom: 20px; font-size: 11px; padding: 4px 12px; max-width: 70vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-      /* Friends panel */
-      #friends-panel { top: auto; bottom: 60px; left: 18px; right: 18px; width: auto; }
+      /* Friends panel — full-width bottom sheet, clears frame */
+      #friends-panel { top: auto; bottom: 60px; left: 22px; right: 22px; width: auto; }
+      .fp-title { font-size: 13px; padding: 10px 12px 6px; }
+      .fp-body { padding: 8px 12px 12px; }
+      .fp-code { font-size: 12px; padding: 10px 12px; }
+      .fp-code span { font-size: 16px; }
+      .fp-input { font-size: 14px; padding: 8px 10px; }
+      .fp-add-btn { font-size: 13px; padding: 8px 14px; }
+      .fp-section { font-size: 11px; margin: 8px 0 4px; }
+      .fp-friend { font-size: 13px; padding: 8px 8px; gap: 8px; }
+      .fp-dot { width: 10px; height: 10px; }
+      .fp-action { font-size: 11px; padding: 6px 10px; }
+      .fp-msg { font-size: 12px; }
 
-      /* Chat box */
-      #chat-box { left: 18px; bottom: 80px; width: auto; right: 60px; }
+      /* Chat box — readable, clears frame */
+      #chat-box { left: 22px; bottom: 90px; width: auto; right: 72px; }
+      .chat-msg { font-size: 13px; padding: 4px 6px; }
+      #chat-input { font-size: 14px; padding: 10px 12px; }
+      #chat-send { font-size: 13px; padding: 10px 16px; }
 
-      /* Nav banner — centered above coords, inside frame */
-      #nav-banner { bottom: 40px; left: 50%; right: auto; transform: translateX(-50%); min-width: auto; max-width: 80vw; padding: 0; }
-      #nav-compass { width: 44px; height: 44px; }
-      #nav-text { padding: 5px 10px; }
-      #nav-direction { font-size: 12px; }
-      #nav-distance { font-size: 9px; }
+      /* Nav banner */
+      #nav-banner { bottom: 44px; left: 50%; right: auto; transform: translateX(-50%); min-width: auto; max-width: 85vw; padding: 0; }
+      #nav-compass { width: 48px; height: 48px; }
+      #nav-text { padding: 8px 14px; }
+      #nav-direction { font-size: 15px; }
+      #nav-distance { font-size: 12px; }
 
       /* Directions panel */
-      .mc-panel-body { padding: 4px 6px 6px; }
-      .dir-input-wrap input { font-size: 11px; }
-      .step-item { font-size: 10px; }
+      .mc-panel-body { padding: 6px 10px 10px; }
+      .dir-input-wrap input { font-size: 14px; padding: 8px 10px; }
+      .step-item { font-size: 13px; padding: 10px 10px; }
+      .step-dist { font-size: 11px; }
+      .dir-btn { font-size: 13px; padding: 8px 12px; }
+      #nav-start-btn { font-size: 14px; padding: 10px 0; }
 
       /* Pause menu */
-      #settings-body { width: 90vw; }
-      .mc-btn { font-size: 12px; padding: 10px 0; }
-      #settings-title { font-size: 18px; }
+      #settings-body { width: 92vw; }
+      .mc-btn { font-size: 14px; padding: 12px 0; }
+      #settings-title { font-size: 20px; }
 
-      /* Attribution hidden globally */
+      /* Help overlay */
+      #help-title { font-size: 18px; }
+      #help-body { padding: 16px; }
+      .help-section-title { font-size: 14px; }
+      .help-row { font-size: 13px; padding: 4px 0; }
+      .help-key { padding: 2px 8px; }
 
       /* Title screen */
       #title-logo { width: 80%; margin-top: 8%; }
-      #title-edition { font-size: 12px; }
+      #title-edition { font-size: 13px; }
       #splash-text { font-size: 14px; top: 15%; right: 5%; }
-      .title-buttons { margin: 6vh auto 0; width: 85vw; min-width: 0; }
-      .mc-menu-btn { font-size: 14px; padding: 8px 0 10px 0; outline-width: 2px; }
-      .mc-menu-row { gap: 6px; }
-      #title-footer { font-size: 8px; padding: 4px 8px; }
-      #title-socials .social-link svg { width: 14px; height: 14px; }
+      .title-buttons { margin: 5vh auto 0; width: 85vw; min-width: 0; }
+      .mc-menu-btn { font-size: 16px; padding: 12px 0 14px 0; outline-width: 2px; }
+      .mc-menu-row { gap: 8px; }
+      #title-footer { font-size: 10px; padding: 6px 12px; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+      #title-socials .social-link svg { width: 18px; height: 18px; }
 
-      /* Auth */
-      #auth-title { font-size: 16px; }
-      #auth-content { margin: 0; padding: 16px; }
-      .auth-label { width: 90vw; font-size: 11px; }
-      .auth-input { width: 90vw; max-width: none; font-size: 14px; padding: 10px 12px; }
-      #auth-buttons .mc-menu-btn { width: 45%; min-width: 120px; font-size: 13px; }
-      #auth-error { font-size: 11px; }
+      /* Auth — 16px min on inputs to prevent Safari zoom */
+      #auth-title { font-size: 18px; }
+      #auth-content { margin: 0; padding: 20px 16px; }
+      .auth-label { width: 90vw; font-size: 13px; margin: 14px 0 6px; }
+      .auth-input { width: 90vw; max-width: none; font-size: 16px; padding: 12px 14px; }
+      #auth-buttons { padding: 16px; gap: 10px; }
+      #auth-buttons .mc-menu-btn { width: 48%; min-width: 130px; font-size: 15px; padding: 12px 0; }
+      #auth-error { font-size: 13px; margin: 10px 0; }
 
-      #loading-title { font-size: 16px; }
-      #loading-bar-wrap { width: 80vw; }
+      /* Loading */
+      #loading-title { font-size: 18px; }
+      #loading-bar-wrap { width: 80vw; height: 22px; }
+      #loading-pct { font-size: 13px; }
+
+      /* Achievement toasts — clears frame */
+      #achievement-container { top: 60px; right: 22px; }
+      .achievement-toast { padding: 10px 16px 10px 12px; }
+      .achievement-title { font-size: 13px; }
+      .achievement-desc { font-size: 13px; }
+      .achievement-icon { width: 36px; height: 36px; }
+      .achievement-icon img { width: 24px; height: 24px; }
+
+      /* POI markers */
+      .poi-label { font-size: 11px; padding: 3px 6px; }
+
+      /* Place card */
+      #place-name { font-size: 14px; }
+      #place-sub { font-size: 11px; margin-bottom: 8px; }
+      .place-btn { font-size: 13px; padding: 8px 14px; }
     }
 
-    /* Extra small screens — frame safety: --ft (10px) + 4px = 14px */
+    /* Extra small screens (iPhone SE, etc.) */
     @media (max-width: 480px) {
-      :root { --ft: 10px; --fc: 14px; }
+      :root { --ft: 12px; --fc: 18px; }
       #controls { display: none; }
-      #search-panel { top: 12px; left: 14px; right: 14px; }
-      #search-input { font-size: 12px; padding: 7px 8px; }
-      #nav-map-toggle { top: 12px; left: 14px; width: 30px; height: 30px; }
-      #social-btns { right: 14px; }
-      .social-btn { width: 30px; height: 30px; font-size: 12px; }
-      .social-btn svg { width: 14px; height: 14px; }
-      #toolbar { right: 14px; bottom: 44px; padding: 2px; }
-      .toolbar-slot { width: 30px; height: 30px; font-size: 14px; }
-      .toolbar-slot svg { width: 14px; height: 14px; }
-      #clock-hud { bottom: 30px; left: 14px; gap: 4px; }
-      #mc-clock { width: 26px; height: 26px; }
-      #clock-time { font-size: 9px; }
-      #clock-weather { font-size: 7px; }
-      #coords { bottom: 12px; font-size: 7px; padding: 2px 6px; }
-      #nav-banner { bottom: 34px; }
-      #nav-compass { width: 38px; height: 38px; }
+
+      /* Search — clears 12px frame */
+      #search-panel { top: 16px; left: 18px; right: 18px; }
+      #search-input { font-size: 16px; padding: 10px 12px; }
+      #nav-map-toggle { top: 16px; left: 18px; width: 40px; height: 40px; }
+
+      /* Social — clears frame */
+      #social-btns { right: 18px; gap: 6px; }
+      .social-btn { width: 40px; height: 40px; font-size: 16px; }
+      .social-btn svg { width: 20px; height: 20px; }
+
+      /* Toolbar — clears frame */
+      #toolbar { right: 18px; bottom: 44px; padding: 2px; gap: 2px; }
+      .toolbar-slot { width: 40px; height: 40px; font-size: 18px; }
+      .toolbar-slot svg { width: 20px; height: 20px; }
+      .toolbar-slot img { width: 22px; height: 22px; }
+
+      /* Clock */
+      #clock-hud { bottom: 34px; left: 18px; gap: 6px; }
+      #mc-clock { width: 34px; height: 34px; }
+      #clock-time { font-size: 12px; }
+      #clock-weather { font-size: 9px; }
+
+      /* Coords — clears bottom frame */
+      #coords { bottom: 16px; font-size: 10px; padding: 3px 10px; }
+
+      /* Nav banner */
+      #nav-banner { bottom: 38px; }
+      #nav-compass { width: 42px; height: 42px; }
+      #nav-direction { font-size: 14px; }
+      #nav-distance { font-size: 11px; }
+
+      /* Title screen */
       #title-logo { width: 90%; margin-top: 12%; }
       .title-buttons { width: 92vw; }
+      .mc-menu-btn { font-size: 15px; padding: 11px 0 13px 0; }
       #splash-text { display: none; }
+
+      /* Friends panel — clears frame */
+      #friends-panel { left: 18px; right: 18px; bottom: 54px; }
+
+      /* Chat */
+      #chat-box { left: 18px; right: 64px; bottom: 80px; }
     }
   </style>
 </head>
@@ -2716,7 +2788,7 @@
         window.removeEventListener('deviceorientationabsolute', onOrientation);
         return;
       }
-      if (!navigator.geolocation) return;
+      if (!navigator.geolocation) { alert('Geolocation is not supported. Make sure you are using HTTPS.'); return; }
       locateActive = true; btn.classList.add('active');
       tryAchievement('first_locate', 'Achievement Made!', 'Where Am I?');
       const playerIcon = L.icon({ iconUrl: makePlayerIcon(), iconSize: [21, 24], iconAnchor: [10, 12], className: 'player-marker' });
@@ -2733,11 +2805,25 @@
           else playerMarker.setLatLng([lat, lng]);
           updateMarkerRotation();
         },
-        () => { locateActive = false; btn.classList.remove('active'); },
+        err => { locateActive = false; btn.classList.remove('active'); if (err.code === 1) alert('Location permission denied. Please allow location access in your browser settings.'); },
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
       );
-      if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onOrientation);
-      else if ('ondeviceorientation' in window) window.addEventListener('deviceorientation', onOrientation);
+      requestDeviceOrientation();
+    }
+
+    function requestDeviceOrientation() {
+      // iOS 13+ requires explicit permission for device orientation
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(function(state) {
+          if (state === 'granted') {
+            window.addEventListener('deviceorientation', onOrientation);
+          }
+        }).catch(function() {});
+      } else if ('ondeviceorientationabsolute' in window) {
+        window.addEventListener('deviceorientationabsolute', onOrientation);
+      } else if ('ondeviceorientation' in window) {
+        window.addEventListener('deviceorientation', onOrientation);
+      }
     }
 
     function onOrientation(e) {
