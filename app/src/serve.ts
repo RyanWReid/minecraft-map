@@ -27,7 +27,7 @@ const STATIC_ONLY = !!process.env.STATIC_ONLY;
 // Database setup
 // ============================================
 
-const DB_PATH = resolve('minecraft-map.db');
+const DB_PATH = resolve('minemap.db');
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -71,6 +71,14 @@ db.exec(`
     from_id INTEGER NOT NULL REFERENCES players(id),
     to_id INTEGER,
     content TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS visits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT,
+    player_id INTEGER,
+    player_name TEXT,
+    path TEXT DEFAULT '/',
     created_at TEXT DEFAULT (datetime('now'))
   );
 `);
@@ -151,6 +159,52 @@ app.post('/api/logout', (req, res) => {
   if (token) sessions.delete(token);
   res.clearCookie('mc_session');
   res.json({ ok: true });
+});
+
+// ============================================
+// Visit tracking & stats
+// ============================================
+
+let guestCount = 0; // in-memory count of non-authenticated page loads
+
+app.get('/api/visit', (req, res) => {
+  const session = getSession(req.cookies?.mc_session);
+  const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || 'unknown';
+  db.prepare('INSERT INTO visits (ip, player_id, player_name, path) VALUES (?, ?, ?, ?)').run(
+    ip, session?.playerId || null, session?.playerName || null, '/'
+  );
+  if (!session) guestCount++;
+  res.json({ ok: true });
+});
+
+app.get('/api/stats', (req, res) => {
+  // Real-time: who's connected via WebSocket right now
+  const online: { name: string; lat: number; lng: number }[] = [];
+  wsClients.forEach(c => {
+    online.push({ name: c.playerName, lat: c.lat, lng: c.lng });
+  });
+
+  // Historical stats from DB
+  const totalPlayers = (db.prepare('SELECT COUNT(*) as c FROM players').get() as any).c;
+  const totalVisits = (db.prepare('SELECT COUNT(*) as c FROM visits').get() as any).c;
+  const todayVisits = (db.prepare("SELECT COUNT(*) as c FROM visits WHERE created_at >= datetime('now', 'start of day')").get() as any).c;
+  const uniqueToday = (db.prepare("SELECT COUNT(DISTINCT ip) as c FROM visits WHERE created_at >= datetime('now', 'start of day')").get() as any).c;
+  const recentVisitors = db.prepare("SELECT player_name, ip, created_at FROM visits ORDER BY created_at DESC LIMIT 20").all();
+
+  res.json({
+    now: {
+      wsConnections: wsClients.size,
+      onlinePlayers: online,
+      guestsThisSession: guestCount,
+    },
+    totals: {
+      registeredPlayers: totalPlayers,
+      totalPageLoads: totalVisits,
+      todayPageLoads: todayVisits,
+      uniqueIpsToday: uniqueToday,
+    },
+    recentVisitors,
+  });
 });
 
 app.get('/api/me', (req, res) => {
@@ -906,8 +960,20 @@ function broadcastToFriends(playerId: number, msg: any) {
 
 // Viewer — served from public/index.html via express.static
 
+// ============================================
+// Error handling — keep server alive
+// ============================================
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled rejection:', reason);
+});
+
 httpServer.listen(PORT, () => {
-  console.log(`\n  Minecraft Map: http://localhost:${PORT}`);
+  console.log(`\n  MineMap: http://localhost:${PORT}`);
   console.log(`  Pipeline: ${PIPELINE_VERSION} | Cache: tile-cache/${TILE_VERSION}/`);
   console.log(`  Mode: ${STATIC_ONLY ? 'STATIC (cached tiles only)' : 'FULL (rendering enabled)'}`);
   console.log(`  WebSocket server ready\n`);

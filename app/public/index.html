@@ -1295,7 +1295,7 @@
     <div id="splash-text">Now with real buildings!</div>
     <div class="title-buttons">
       <div id="title-player" style="display:none">Playing as <span id="title-pname"></span></div>
-      <div class="mc-menu-btn" id="btn-play" onclick="titlePlay()">Singleplayer</div>
+      <div class="mc-menu-btn" id="btn-play" onclick="titlePlay()">Play as Guest</div>
       <div class="mc-menu-btn" id="btn-signin" onclick="showAuth('login')">Sign In</div>
       <div class="mc-menu-btn" id="btn-signup" onclick="showAuth('register')">Create New Account</div>
     </div>
@@ -1867,6 +1867,8 @@
           setTimeout(() => {
             loadScreen.classList.remove('open');
             document.getElementById('title-screen').classList.add('hidden');
+            // Track visit
+            fetch('/api/visit').catch(function(){});
             // First time entering the world
             setTimeout(function() { tryAchievement('first_world', 'Achievement Made!', 'Into the World', '/icons/ender_eye.png'); }, 1500);
           }, 400);
