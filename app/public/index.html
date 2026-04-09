@@ -336,7 +336,6 @@
 
     .player-marker {
       image-rendering: pixelated;
-      transition: transform 0.3s ease;
     }
     /* zoom controls integrated into toolbar */
     /* Right toolbar — inventory hotbar */
@@ -3147,7 +3146,14 @@
     function updateMarkerRotation() {
       if (!playerMarker) return;
       const el = playerMarker.getElement();
-      if (el) el.style.transform = el.style.transform.replace(/rotate\([^)]*\)/, '') + ' rotate(' + heading + 'deg)';
+      if (!el) return;
+      // Find the <img> inside the marker and rotate it directly
+      // This avoids interfering with Leaflet's translate transform on the container
+      const img = el.querySelector('img');
+      if (img) {
+        img.style.transformOrigin = '50% 50%';
+        img.style.transform = 'rotate(' + heading + 'deg)';
+      }
     }
 
     // ---- Sound hooks for zoom, hover, and search focus ----
