@@ -54,7 +54,7 @@ function parseArgs(): { bbox: BoundingBox; outputDir: string; zoom: number; name
         break;
       case '--help':
         console.log(`
-Minecraft Map Pipeline — Phase 1
+MineMap Pipeline — Phase 1
 
 Usage:
   npx tsx src/index.ts [options]
@@ -86,7 +86,7 @@ Example:
 async function main() {
   const { bbox, outputDir, zoom, name } = parseArgs();
 
-  console.log(`\n=== Minecraft Map Pipeline ===`);
+  console.log(`\n=== MineMap Pipeline ===`);
   console.log(`Region: ${name}`);
   console.log(`BBox: ${bbox.south},${bbox.west} -> ${bbox.north},${bbox.east}`);
   console.log(`Zoom: ${zoom}`);

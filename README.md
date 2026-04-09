@@ -1,4 +1,4 @@
-# Minecraft Map
+# MineMap
 
 **The entire real world, rendered as a Minecraft map.** Pan, zoom, search, and navigate anywhere on Earth -- every tile is generated on-the-fly from real geographic data using a full 3D voxel pipeline. Built in 3 days.
 
@@ -167,8 +167,8 @@ Open **http://localhost:3001**.
 ### Docker
 
 ```bash
-docker build -t minecraft-map .
-docker run -p 3001:3001 minecraft-map
+docker build -t minemap .
+docker run -p 3001:3001 minemap
 ```
 
 ## License
