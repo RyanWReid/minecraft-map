@@ -2729,6 +2729,7 @@
       navStepIdx = 0;
       btn.textContent = 'Stop Navigation';
       btn.classList.add('navigating');
+      startCompassJitter();
       tryAchievement('first_navigate', 'Achievement Made!', 'On My Way', '/icons/compass_0.png');
       document.getElementById('dir-close').textContent = 'Minimize';
       document.getElementById('nav-banner').classList.add('open');
@@ -2796,6 +2797,7 @@
       navActive = false;
       navUserLat = null; navUserLng = null;
       navRouteCoords = [];
+      stopCompassJitter();
       if (navWatchId !== null) { navigator.geolocation.clearWatch(navWatchId); navWatchId = null; }
       document.getElementById('nav-banner').classList.remove('open');
       document.getElementById('nav-compass').src = '/icons/compass_0.png';
@@ -2873,17 +2875,42 @@
     for (let i = 0; i < COMPASS_FRAMES; i++) { const img = new Image(); img.src = '/icons/compass_' + i + '.png'; }
     let navUserLat = null, navUserLng = null;
     let navCompassFrame = -1;
+    let navCompassTarget = 0; // target frame (from bearing)
+    let navCompassJitterInterval = null;
+
     function updateNavCompass() {
       if (!navActive || navStepIdx >= navSteps.length || navUserLat == null) return;
       const step = navSteps[Math.min(navStepIdx + 1, navSteps.length - 1)];
       const loc = step.maneuver.location;
-      const deg = bearing(navUserLat, navUserLng, loc[1], loc[0]);
-      // Map 0-360 degrees to frame index (0=N, 7≈E, 14≈S, 21≈W)
-      const frame = Math.round(deg / 360 * COMPASS_FRAMES) % COMPASS_FRAMES;
+      // Absolute bearing to destination
+      var absBearing = bearing(navUserLat, navUserLng, loc[1], loc[0]);
+      // Subtract user's heading so compass points relative to where they face
+      var relativeDeg = (absBearing - heading + 360) % 360;
+      navCompassTarget = Math.round(relativeDeg / 360 * COMPASS_FRAMES) % COMPASS_FRAMES;
+      setCompassFrame(navCompassTarget);
+    }
+
+    function setCompassFrame(frame) {
+      frame = ((frame % COMPASS_FRAMES) + COMPASS_FRAMES) % COMPASS_FRAMES;
       if (frame !== navCompassFrame) {
         navCompassFrame = frame;
         document.getElementById('nav-compass').src = '/icons/compass_' + frame + '.png';
       }
+    }
+
+    // Minecraft compass jitter — wobbles ±1-2 frames randomly
+    function startCompassJitter() {
+      if (navCompassJitterInterval) return;
+      navCompassJitterInterval = setInterval(function() {
+        if (!navActive) return;
+        var jitter = Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0;
+        if (Math.random() < 0.08) jitter = Math.random() < 0.5 ? -2 : 2; // occasional bigger wobble
+        setCompassFrame(navCompassTarget + jitter);
+      }, 150);
+    }
+
+    function stopCompassJitter() {
+      if (navCompassJitterInterval) { clearInterval(navCompassJitterInterval); navCompassJitterInterval = null; }
     }
 
     // ---- Player location marker ----
